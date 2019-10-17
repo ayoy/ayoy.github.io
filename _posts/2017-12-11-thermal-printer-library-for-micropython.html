@@ -1,0 +1,109 @@
+---
+layout: post
+title: Thermal Printer library for MicroPython
+date: 2017-12-11 22:05:47.000000000 +01:00
+type: post
+parent_id: '0'
+published: true
+password: ''
+status: publish
+categories:
+- embedded
+tags:
+- adafruit
+- embedded
+- lopy
+- micropython
+- pycom
+- thermal printer
+meta:
+  _thumbnail_id: '269'
+  _publicize_done_external: a:2:{s:7:"twitter";a:1:{i:18932277;s:50:"https://twitter.com/ayoy/status/940328894061858817";}s:8:"facebook";a:1:{i:18932318;s:38:"https://facebook.com/10154949872822414";}}
+  _rest_api_published: '1'
+  _rest_api_client_id: "-1"
+  _wpas_skip_18932318: '1'
+  _wpas_skip_18932316: '1'
+  _wpas_skip_18932277: '1'
+  _publicize_job_id: '12402183352'
+  _publicize_done_19076888: '1'
+  _wpas_done_18932277: '1'
+  publicize_twitter_user: ayoy
+  publicize_linkedin_url: https://www.linkedin.com/updates?discuss=&scope=39124373&stype=M&topic=6346096556109766657&type=U&a=tDxi
+  _publicize_done_19076937: '1'
+  _wpas_done_18932316: '1'
+  _publicize_done_19076940: '1'
+  _wpas_done_18932318: '1'
+author: Dominik Kapusta
+permalink: "/2017/12/11/thermal-printer-library-for-micropython/"
+excerpt: I recently got a thermal printer and adapted its Python library to MicroPython.
+  It took only a couple of hours, but let me explain the rationale behind purchasing
+  a thermal printer.
+---
+<p>TL;DR: <a href="https://github.com/ayoy/micropython-thermal-printer" target="_blank" rel="noopener">https://github.com/ayoy/micropython-thermal-printer</a>.</p>
+<p>But I feel like I need to explain the whole thing from the very beginning.</p>
+<h1 style="text-align:justify;">A thermal printer?</h1>
+<p style="text-align:justify;">So a couple of weeks ago I met with two old friends of mine to take part in the hackaton in Kraków, Poland. The hackaton was actually just an excuse to get together, take a little trip down memory lane, and have some potentially inspiring conversation over drinks. Mind you, we did some coding at the hackaton and even got the prize, but still, the late Saturday beers made the real impact.</p>
+<p style="text-align:justify;">That night I learned that there was a guy on the internet that made a thermal printer automatically print tweets he had been mentioned in. It just blew my mind how nicely this matched the definition of <em>hacking</em>, which is, by <a href="https://en.wikipedia.org/wiki/Hacker_culture" rel="noopener">Wikipedia</a>:</p>
+<blockquote><p>The act of engaging in activities (such as programming or other media) in a spirit of playfulness and exploration</p></blockquote>
+<p style="text-align:justify;">Straight off I wanted to do a similar stuff myself. Not necessarily the Twitter thingy, but the possibilities are infinite. Plus when it comes to tinkering with electronics, in case of a thermal printer, the possible benefits like saving your time or making your life easier are inferior to the coolness of <span style="text-decoration:underline;">possessing the actual thermal printer</span>.</p>
+<p style="text-align:justify;">I mean, do you know anyone that owns a thermal printer for personal use?</p>
+<h1 style="text-align:justify;">What's on the market</h1>
+<p style="text-align:justify;">The go-to solution is the Adafruit's <a href="https://www.adafruit.com/product/597" rel="noopener">Mini Thermal Receipt Printer</a>, and it's easily available in Europe too. There's a library for Arduino and Python provided by Adafruit, as well as some example code. At $50 however (or over €60 where I live) I deemed it a bit too pricey for a toy with no real-life application in mind (yet).</p>
+<p style="text-align:justify;">There are obviously plenty of thermal printers on AliExpress, so I went there and found one in a similar shape, hoping that it would come with the same internals and communication protocol too. Sacrificing availability for a lower price, I ordered it and patiently waited for the shipment.</p>
+<h1 style="text-align:justify;">4 weeks later</h1>
+<p style="text-align:justify;"><img class="alignnone size-full wp-image-247" src="{{ site.baseurl }}/assets/img_3101-2-e1512977055460.jpg" alt="IMG_3101 2" width="2773" height="2773" /></p>
+<p style="text-align:justify;">When I unwrapped the package, I noticed that my printer had a different connector than the Adafruit printer. That wasn't a big deal though, as the only outlets you need for a thermal printer are power and serial port. You can even skip the printer TX pin if you won't be checking the paper status. All of these pins were provided on my printer's connector so I was ready to give it a spin.</p>
+<p style="text-align:justify;"><img class="alignnone size-full wp-image-251" src="{{ site.baseurl }}/assets/img_3102.jpg" alt="IMG_3102" width="4032" height="3024" /></p>
+<h1 style="text-align:justify;">First test</h1>
+<p style="text-align:justify;">I wanted to check if it works with <a href="https://github.com/adafruit/Adafruit-Thermal-Printer-Library">Adafruit C++ library for Arduino</a>. I set up a test circuit with ATMega-328P microcontroller, ran the example code and it worked! Well, sort of.</p>
+<p style="text-align:justify;">I could see the paper coming out of the printer, and it had words printed on it. Not all of them though, given what was in the source code. But as you can see from the photo, I powered it using the iPad charger that's reportedly capable of sourcing up to 2A@5V DC.</p>
+<p style="text-align:justify;"><img class="size-full wp-image-253 aligncenter" src="{{ site.baseurl }}/assets/img_3105-e1512978297745.jpg?w=1032" alt="img_3105.jpg" width="516" height="516" /></p>
+<p style="text-align:justify;">The printer, according to datasheet needs around 1.5A at 5-9V DC, so technically it shouldn't be a problem. However a friend of mine that bought the same printer at the same time powered it with 8V DC and got a flawless printout, so I knew I needed to sort out the power supply.</p>
+<p style="text-align:justify;">In fact, the next day when I connected it to the shiny new 2A 9V DC power adapter, the example code for Adafruit Arduino library worked perfectly fine with all the features listed in the example program, such as printing barcodes, QR codes, and bitmaps.</p>
+<p style="text-align:justify;">Having confirmed that my printer works with Adafruit library, I went on to get it working with LoPy from <a href="http://pycom.io" target="_blank" rel="noopener">Pycom</a>.</p>
+<h1 style="text-align:justify;">MicroPython</h1>
+<p style="text-align:justify;">As my WiPy is busy running the <a href="http://kapusta.cc/2017/12/02/home-made-air-quality-monitoring-using-wipy/">air quality monitor</a>, and the LoPy4 hasn't been shipped yet, I managed to borrow two LoPy version 1 boards from a friend – mainly to evaluate LoRa, but also to try out the printer.</p>
+<p style="text-align:justify;">Adafruit were generous enough to put up a thermal printer <a href="https://github.com/adafruit/Python-Thermal-Printer" target="_blank" rel="noopener">library written in Python</a>, so I based my work on it, and did the following changes to get it running:</p>
+<ol style="text-align:justify;">
+<li>removed Python 2.x code since MicroPython is Python 3,</li>
+<li>removed <code>writeToStdout()</code>,</li>
+<li>replaced <code>Serial</code> with <code>machine.UART</code>,</li>
+<li>removed image printing method, because it depended on Python Imaging Library that apparently is not available in MicroPython.</li>
+</ol>
+<p>&nbsp;</p>
+<p>[caption id="attachment_255" align="aligncenter" width="497"]<img class="  wp-image-255 aligncenter" src="{{ site.baseurl }}/assets/img_3112.jpg" alt="IMG_3112" width="497" height="663" /> This is what happens when you omit a stop bit.[/caption]</p>
+<p>&nbsp;</p>
+<p style="text-align:justify;">Still not bad for the first try ;) The next step was to get the UART's stop bits right, and then it started to look similar to what I saw on the ATMega with Adafruit's library. I then followed up with some improvements, including:</p>
+<ol style="text-align:justify;">
+<li>removing support for pre-2.68 firmware – my printer is 2.69 and I don't have older models to test with,</li>
+<li>disabling calls to <code>wake()</code> and <code>reset()</code> at initialization because they caused printing garbage in the first line printed after initialization,</li>
+<li>fixing <code>sleepAfter()</code> and <code>wake()</code> methods that used printer commands different from those specified in the datasheet. It was either a bug in the original library or a feature of older firmware versions. It might as well work just fine with my printer too, but I was in "check that everything is in line with the datasheet" mode as I was constantly getting some unwanted characters printed out here and there;</li>
+<li>parametrizing <em>heat dots</em> and <em>heat interval</em> settings – my printer had different settings than those hardcoded by default in the Python library;
+<ul>
+<li>there's an API for getting that info: calling <code>testPage()</code> will print the test page (!) that also contains information such as current temperature, operating voltage, firmware version plus <em>heat dots</em>, <em>heat time</em> and <em>heat interval</em> parameters.</li>
+</ul>
+</li>
+</ol>
+<p style="text-align:justify;">And that's how I eventually got it right. The underscored indent before "Large" that is visible in the photo below got fixed in the meantime too.</p>
+<p style="text-align:justify;"><img class="  wp-image-257 aligncenter" src="{{ site.baseurl }}/assets/img_31131.jpg?w=1536" alt="IMG_3113" width="554" height="739" /></p>
+<p style="text-align:justify;">Just so you know, printing with the lib is <strong>dead simple</strong>. For regular text it boils down to just calling <code>println()</code>:</p>
+<p>[code language="python"]</p>
+<p>from Adafruit_Thermal import *<br />
+from machine import Pin</p>
+<p>printer = Adafruit_Thermal(pins=(Pin.exp_board.G14,<br />
+                                 Pin.exp_board.G15))<br />
+printer.println(&quot;You just print line by line&quot;)<br />
+printer.println(&quot;using 'println()'&quot;)<br />
+[/code]</p>
+<p>Text decorations like changing size, alignment, font weight or line spacing are all single-line commands too. There's an <a href="https://github.com/ayoy/micropython-thermal-printer/blob/master/printertest.py" target="_blank" rel="noopener">example code</a> in the repository printing the text shown in the photos.</p>
+<h1 style="text-align:justify;">Remaining work</h1>
+<p style="text-align:justify;">I still have to make printing bitmaps work, as my LoPy couldn't manage to do that due to memory allocation problem. It might be a device limitation (it's got 512kB of RAM but I guess some of it is already taken by MicroPython runtime) or a bug in the code, or the combination of those two. I'll give it another try in the next couple of days, maybe I could make a proper use of garbage collector... I'm still learning Python so I could as well be talking bullsh** – I'd appreciate any kind of help or guidance if that hurts your eyes.</p>
+<p><strong>UPDATE 2017-12-16: </strong>Printing bitmaps is now supported – read more <a href="http://kapusta.cc/2017/12/16/printing-bitmaps-with-a-thermal-printer/">in this blog post.</a></p>
+<h1 style="text-align:justify;">Disclaimer</h1>
+<p style="text-align:justify;">I need to point out again that the printer I tested the library with is not the original Adafruit Mini Thermal Receipt Printer so your mileage may vary with their device. Given that I used Adafruit printer's datasheet as a reference and achieved satisfactory results, chances are it would work with their printer too.</p>
+<p style="text-align:justify;">If you happen to have that printer and would like to give it a spin with a MicroPython-powered microcontroller then I'd be happy to hear about your experience. And if you don't have the thermal printer yet, I wholeheartedly recommend getting one, as I believe it's a beginning of a great journey ;) Once again, you can get the MicroPython library <a href="https://github.com/ayoy/micropython-thermal-printer" target="_blank" rel="noopener">from GitHub</a>.</p>
+<p style="text-align:justify;">Thanks for reading through!</p>
+<div class="grammarly-disable-indicator"></div>
+<div class="grammarly-disable-indicator"></div>
+<div class="grammarly-disable-indicator"></div>
+<div class="grammarly-disable-indicator"></div>

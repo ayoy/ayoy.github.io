@@ -1,0 +1,110 @@
+---
+layout: post
+title: Track-ing weather on a velodrome
+date: 2018-08-13 22:07:36.000000000 +02:00
+type: post
+parent_id: '0'
+published: true
+password: ''
+status: publish
+categories:
+- embedded
+tags:
+- air
+- air density
+- bme280
+- pycom
+- station
+- velodrome
+- weather
+meta:
+  _thumbnail_id: '645'
+  _rest_api_published: '1'
+  _rest_api_client_id: "-1"
+  _wpas_skip_18932316: '1'
+  _wpas_skip_18932277: '1'
+  _publicize_job_id: '21049950062'
+  timeline_notification: '1534194457'
+  _oembed_ce99fab98d71c57769563d438381f733: '<div class="embed-twitter"><blockquote
+    class="twitter-tweet" data-width="500" data-dnt="true"><p lang="en" dir="ltr">Numbers
+    look nice and clean on the <a href="https://twitter.com/hashtag/epaper?src=hash&amp;ref_src=twsrc%5Etfw">#epaper</a>
+    with 23pt Menlo font. I convert custom fonts to byte representation using a great
+    tool by <a href="https://twitter.com/LuckyResistor?ref_src=twsrc%5Etfw">@LuckyResistor</a>,
+    after a couple of tweaks: <a href="https://t.co/ZD5ispCKS0">https://t.co/ZD5ispCKS0</a>
+    <a href="https://twitter.com/hashtag/smogometer?src=hash&amp;ref_src=twsrc%5Etfw">#smogometer</a>
+    <a href="https://twitter.com/hashtag/LoPy?src=hash&amp;ref_src=twsrc%5Etfw">#LoPy</a>
+    <a href="https://twitter.com/hashtag/GOINVENT?src=hash&amp;ref_src=twsrc%5Etfw">#GOINVENT</a>
+    <a href="https://t.co/sIueMNJm2b">pic.twitter.com/sIueMNJm2b</a></p>&mdash; Dominik
+    Kapusta (@ayoy) <a href="https://twitter.com/ayoy/status/989432653026856960?ref_src=twsrc%5Etfw">April
+    26, 2018</a></blockquote><script async src="https://platform.twitter.com/widgets.js"
+    charset="utf-8"></script></div>'
+  _oembed_time_ce99fab98d71c57769563d438381f733: '1549816069'
+  _oembed_27adfca1b86472c05db94b37dd1e67ae: <div class="embed-twitter"><blockquote
+    class="twitter-tweet" data-width="500" data-dnt="true"><p lang="en" dir="ltr">I
+    was excited, but Mac only :&#39;(</p>&mdash; ioPush (@ioPush_net) <a href="https://twitter.com/ioPush_net/status/989455886203662336?ref_src=twsrc%5Etfw">April
+    26, 2018</a></blockquote><script async src="https://platform.twitter.com/widgets.js"
+    charset="utf-8"></script></div>
+  _oembed_time_27adfca1b86472c05db94b37dd1e67ae: '1549816130'
+author: Dominik Kapusta
+permalink: "/2018/08/13/tracking-weather-on-a-velodrome/"
+excerpt: A friend of mine, Piotr Klin, will attempt breaking the cycling hour record.
+  Here's how I helped him nail down the start time by measuring air density on the
+  velodrome.
+---
+<p>A friend of mine, <a href="https://twitter.com/Klinplus2pedaly">Piotr Klin</a>, is the fastest Masters level cyclist in Poland (as proven during last weekend's National Championships), the current silver medalist of the Masters World Cup, and one of the fastest people on the bike that I know in person. He is taking on the next challenge this Sunday - the ultimate cycling endurance test, known as the <a href="https://en.wikipedia.org/wiki/Hour_record" target="_blank" rel="noopener">hour record attempt</a>.</p>
+<p>In simple words, the hour record attempt is about covering as long distance as possible within one hour, on an indoor bicycle track. Riding a track bike, i.e. fixed gear, no breaks, no water, no eating, around a 250m wooden velodrome — you can already imagine how mentally challenging it can be. And when I tell you that the aim is to beat the national Elite record and world Masters record, which would require Piotr to ride over 50km (within one hour), you should get the idea of what kind of a dreaded nightmare it is.</p>
+<p>[caption id="attachment_624" align="alignnone" width="2000"]<img class="alignnone size-full wp-image-624" src="{{ site.baseurl }}/assets/uwct.jpg" alt="uwct" width="2000" height="1333" /> Piotr Klin in full flight.[/caption]</p>
+<p>In order to succeed in such an attempt, not only the extraordinary physical and mental form is required. Aerodynamics of both the rider and the bicycle play a very significant role too. Piotr is a mechanical engineer and he works on aerodynamics in the automotive industry, so he realizes the importance of a streamlined airflow around the body and the bike very well and is able to utilize his knowledge to improve the results. To the extent of 3D-printing some bike components...</p>
+<p>[caption id="attachment_623" align="alignnone" width="1152"]<img class="alignnone size-full wp-image-623" src="{{ site.baseurl }}/assets/handlebar-e1534182411445.jpg" alt="handlebar" width="1152" height="1626" /> This is a handlebar.[/caption]</p>
+<p>Last but not least, aerodynamics depend heavily on the weather conditions. Namely, on the air density (often marked with a Greek letter <em>rho</em> – ρ), which is a factor of air pressure, relative humidity and temperature. The higher the air density, the more difficult is to travel through the air. Even if its impact is unnoticeable in daily life, in competition, especially at relatively high speed over a long time, it makes a significant difference. Let me just point out that for an hour attempt, just a 2-3% change in air density could alter the resulting distance by up to 300-400m, which can mean winning or losing.</p>
+<h1>Indoor weather station</h1>
+<p>Even if the date for the attempt was set and the velodrome was booked a couple of months ago, the precise time of day when Piotr would start was yet to be decided. We developed the simple weather station to figure out the air density at the velodrome and the optimal attempt time.</p>
+<h2>Requirements</h2>
+<ul>
+<li>The weather station would measure air pressure, relative humidity and temperature and calculate the air density out of these values.</li>
+<li>It needs to do measurements frequently enough so that we'll be able to nail down the optimal one-hour time window.</li>
+<li>It should send the data periodically to the internet to allow analysing it on the fly.</li>
+<li>It would be installed on a velodrome, without an easy way to connect to grid power, so it should run on the battery.</li>
+<li>There is no LoRaWAN coverage in the area, so it has to use WiFi.</li>
+<li>The velodrome WiFi is open (!) and tends to break down under heavy load (e.g. during track race days), and the device shouldn't lose data due to lack of connectivity.</li>
+<li>The velodrome is in Pruszków, Poland. It's over 100km from where I live, and I'm not visiting it often in summer. The device should then be either pretty bulletproof or easy to fix/reset by the non-technical velodrome staff that I could contact over the phone.</li>
+</ul>
+<p>Plus, the hour record attempt takes place on the 19th of August, and it was the end of June when Piotr asked me to do it :) Given that we'd like to gather a couple of weeks worth of data before deciding on a start time, the device should be ready within days.</p>
+<h2>Hardware choice</h2>
+<p>Now I need to stress out that I'm not in any way affiliated with or sponsored by Pycom (ok, that's not counting the WiPy board I got a long time ago from Jose Marcelino ❤️), but simply put, to make a working prototype within a couple of days, it was the easiest for me to leverage my MicroPython experience and loads of existing code I once wrote to do this new project.</p>
+<p>I went with:</p>
+<ul>
+<li>WiPy 3.0 board</li>
+<li>Pycom Expansion Board for connecting everything without preparing a custom PCB,</li>
+<li>BME280 environmental sensor that measures air pressure, humidity and temperature,</li>
+<li>DS3231 external RTC module to keep correct measurement timestamps (more on that later),</li>
+<li>a microSD card to store and backup measurements,</li>
+<li>a 2400mAh battery, hoping it would last 6 weeks,</li>
+<li>an external WiFi antenna, just in case.</li>
+</ul>
+<p>The expansion board also provides a battery connector and the microSD card slot. It drains some extra current for battery level measurement, and that could be optimized on a custom circuit board, but it's a trade-off for having all the goods mentioned before.</p>
+<p>[caption id="attachment_625" align="alignnone" width="4032"]<img class="alignnone size-full wp-image-625" src="{{ site.baseurl }}/assets/circuit.jpg" alt="circuit" width="4032" height="3024" /> Test circuit.[/caption]</p>
+<p><img class=" size-medium wp-image-626 alignright" src="{{ site.baseurl }}/assets/elevated.jpg?w=600" alt="elevated" width="300" height="300" />Fitting the BME280 breakout board was not a simple task, because I got the version with an extra CCS811 sensor that used 7 pins in total, but I finally had the excuse to use the weirdly looking elevated goldpins that I once bought for a no good reason. Needless to say, my RTC module also required some extra wizardry to fit on the expansion board, but at the end of the day, <em>it is possible to connect any two interfaces with a finite number of adapters.</em></p>
+<h2>Software implementation</h2>
+<h3>Air Density measurement</h3>
+<p>I was lucky to find a <a href="https://bitbucket.org/oscarBravo/wipy_bme280" target="_blank" rel="noopener">MicroPython BME280 library</a> that I ported to Pycom MicroPython with just a little effort, so the core functionality was a no-brainer. Well, not. The sensor obviously reports only the raw values of temperature, absolute air pressure and relative humidity. The air density still needs to be calculated. Piotr shared a spreadsheet with me:</p>
+<p>[caption id="attachment_622" align="aligncenter" width="1024"]<img class="aligncenter size-large wp-image-622" src="{{ site.baseurl }}/assets/screen-shot-2018-08-13-at-17-24-20.png?w=2048" alt="Screen Shot 2018-08-13 at 17.24.20" width="1024" height="974" /> Here for example, for values in red cells, the air density is 1.131kg/m^3 (dark green cell).[/caption]</p>
+<p>All I needed to do was to write it in Python and verify that it outputs the correct values. Check.</p>
+<h3>Data storage and upload</h3>
+<p>In order to achieve the proper measurement resolution, we decided to capture the data every 10 minutes. Now should the device upload data points one by one to the server, the WiFi would drain the battery in a couple of days at most. Since we didn't need a real-time information on weather conditions, it was okay to upload the data once a day (or more precisely, once every 144 measurements, which is <em>24 hours</em> times <em>6 per hour</em>), and otherwise keep the WiFi radio turned off.</p>
+<p>With a native Pycom support for the microSD card, it was a piece of cake to store measurements between uploads in a text file on the card. Already uploaded data points are kept on the microSD card for offline access and for backup purposes.</p>
+<h3>Timestamping</h3>
+<p>The problem with uploading once per day is that the device doesn't know the time between measurements. The real-time clock on Espressif ESP-32 chip (which is the heart of Pycom devices) is not powered during deep sleep, so when device wakes up 10 minutes after last data upload, it's back to 1970. So when it comes to keeping time during sleep, Espressif is a <strong>BYOC</strong> (<em>bring your own clock</em>) platform.</p>
+<p>The time is synced once per day (during data upload), it is kept in the external RTC module (powered with a separate battery), and it's used for timestamping intermediate measurements.</p>
+<h2>Server</h2>
+<p>No fancy stuff here, I went with good old <a href="https://www.influxdata.com/time-series-platform/influxdb/" target="_blank" rel="noopener">InfluxDB</a> for storing data and <a href="https://grafana.com" target="_blank" rel="noopener">Grafana</a> for visualization. It's good enough, looks nice and clean and can be up and running within minutes.</p>
+<p><img class="alignnone size-full wp-image-646" src="{{ site.baseurl }}/assets/screen-shot-2018-08-13-at-22-48-57.png" alt="Screen Shot 2018-08-13 at 22.48.57.png" width="1993" height="1788" /></p>
+<h2>Deployment</h2>
+<p>After proving that prototype works stable at my home, I tested it on the velodrome. Thankfully, it happened during Grand Prix Poland, with lots of people on the track, and, as it turned out, a broken WiFi. I realized that the device tried to connect for too long, then it got reset by a watchdog (that was set to 60s) and it repeated the same thing again until it managed to upload the data successfully (which didn't happen in a couple of hours).</p>
+<p>&nbsp;</p>
+<p>[gallery ids="644,647" type="rectangular"]</p>
+<p>Trying to connect to WiFi repeatedly over a couple of hours is, of course, deadly to the battery, so I needed another trade-off to save the battery and the data, to some extent. I reworked the code to try to upload the data only once, and on failure don't repeat, but just store the data on the SD card and move on. This way it would skip a day worth of measurements, but would still work and gather the data, possibly the next day the WiFi would be up again, and I could access the missing data offline by copying them from the SD card.</p>
+<h1>Conclusions</h1>
+<p>Piotr will go at 18:00. My work is done and it's on him now. 🤞🏻🤞🏻🤞🏻</p>
+<p>https://www.facebook.com/piotr.klin.5/videos/pcb.10155804967730847/10155804967355847</p>
+<p>PS. It's August 14th and the battery voltage is at around 3.7V after 38 days. Not bad.</p>

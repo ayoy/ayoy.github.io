@@ -1,0 +1,104 @@
+---
+layout: post
+title: Adding custom fonts to E-paper Display
+date: 2019-02-10 19:43:14.000000000 +01:00
+type: post
+parent_id: '0'
+published: true
+password: ''
+status: publish
+categories:
+- embedded
+tags:
+- c++
+- e-ink
+- e-paper
+- epd
+- font
+- python
+- qt
+- waveshare
+meta:
+  _oembed_0942bdcc03fb0a62bf0cfb30b9c7ab5f: <div class="embed-twitter"><blockquote
+    class="twitter-tweet" data-width="550" data-dnt="true"><p lang="en" dir="ltr">I
+    was excited, but Mac only :&#39;(</p>&mdash; ioPush (@ioPush_net) <a href="https://twitter.com/ioPush_net/status/989455886203662336?ref_src=twsrc%5Etfw">April
+    26, 2018</a></blockquote><script async src="https://platform.twitter.com/widgets.js"
+    charset="utf-8"></script></div>
+  _oembed_time_0942bdcc03fb0a62bf0cfb30b9c7ab5f: '1549822265'
+  _thumbnail_id: '712'
+  _wpas_skip_18932316: '1'
+  _wpas_skip_18932277: '1'
+  _oembed_27adfca1b86472c05db94b37dd1e67ae: <div class="embed-twitter"><blockquote
+    class="twitter-tweet" data-width="500" data-dnt="true"><p lang="en" dir="ltr">I
+    was excited, but Mac only :&#39;(</p>&mdash; ioPush (@ioPush_net) <a href="https://twitter.com/ioPush_net/status/989455886203662336?ref_src=twsrc%5Etfw">April
+    26, 2018</a></blockquote><script async src="https://platform.twitter.com/widgets.js"
+    charset="utf-8"></script></div>
+  _rest_api_published: '1'
+  _rest_api_client_id: "-1"
+  _publicize_job_id: '27489204885'
+  timeline_notification: '1549824195'
+  _oembed_fc8379104b5f24cbb377bde359a22d24: <div class="embed-twitter"><blockquote
+    class="twitter-tweet" data-width="550" data-dnt="true"><p lang="en" dir="ltr">I
+    was excited, but Mac only :&#39;(</p>&mdash; ioPush (@ioPush_net) <a href="https://twitter.com/ioPush_net/status/989455886203662336?ref_src=twsrc%5Etfw">April
+    26, 2018</a></blockquote><script async src="https://platform.twitter.com/widgets.js"
+    charset="utf-8"></script></div>
+  _oembed_time_fc8379104b5f24cbb377bde359a22d24: '1549824196'
+  _oembed_84639a712bf3379f07178ff1759709fd: <div class="embed-twitter"><blockquote
+    class="twitter-tweet" data-width="550" data-dnt="true"><p lang="en" dir="ltr">I
+    was excited, but Mac only :&#39;(</p>&mdash; ioPush (@ioPush_net) <a href="https://twitter.com/ioPush_net/status/989455886203662336?ref_src=twsrc%5Etfw">April
+    26, 2018</a></blockquote><script async src="https://platform.twitter.com/widgets.js"
+    charset="utf-8"></script></div>
+  _oembed_time_84639a712bf3379f07178ff1759709fd: '1549824197'
+  _oembed_time_27adfca1b86472c05db94b37dd1e67ae: '1549824228'
+  _publicize_done_external: a:1:{s:7:"twitter";a:1:{i:18932277;s:51:"https://twitter.com/ayoy/status/1094672011023003649";}}
+  _publicize_done_19076888: '1'
+  _wpas_done_18932277: '1'
+  publicize_twitter_user: ayoy
+  publicize_linkedin_url: www.linkedin.com/updates?topic=6500438340813357057
+  _publicize_done_19076937: '1'
+  _wpas_done_18932316: '1'
+author: Dominik Kapusta
+permalink: "/2019/02/10/font2bytes/"
+excerpt: It's a long overdue post, but my real life kicked in heavily last summer
+  and I couldn't get back to working on a blog until now. Read on for the writeup
+  on a tool to convert png images into font definition files.
+---
+<p style="text-align:justify;">It's a long overdue post, but my real life kicked in heavily last summer and I couldn't get back to working on a blog until now. Read on for the writeup on a tool to convert png images into font definition files.</p>
+<h2 style="text-align:justify;">TL;DR:</h2>
+<ul>
+<li style="text-align:justify;"><a href="https://github.com/ayoy/font2bytes">https://github.com/ayoy/font2bytes</a> – a multiplatform C++ library with a CLI tool and Qt-based GUI app,</li>
+<li style="text-align:justify;"><a href="https://github.com/ayoy/FontToBytes">https://github.com/ayoy/FontToBytes</a> – a MacOS app that was an inspiration (I'm linking here my fork with extended functionality).</li>
+</ul>
+<p>&nbsp;</p>
+<hr />
+<p style="text-align:justify;">Following up on my <a href="http://kapusta.cc/2018/03/31/epd/">e-paper display library</a>, I found out fairly quickly that the original fonts provided by Waveshare have some shortcomings. First of all, you might want a different size than 8, 12, 16, 20 or 24px high. I can also imagine situations where you'd need a bold or italic font typeface alongside the regular one. Then, the default font contains basic ASCII characters only, which is fine for English but falls short for virtually any other language. Any of the following:</p>
+<ul style="text-align:justify;">
+<li>the extended ASCII set (code range 128-255),</li>
+<li>non-ASCII Latin alphabet characters (<code>ąčćęěłňńšśźżž</code>, to name a few :) ),</li>
+<li>any non-Latin alphabet,</li>
+</ul>
+<p style="text-align:justify;">is just not there. So whenever you're working on an embedded system that displays messages in your local language, you might be interested in providing your own font for the display.</p>
+<p style="text-align:justify;">Last but not least, a custom font allows for defining your own characters (icons, symbols, etc.), which can be very useful on various occasions.</p>
+<h1>The font file structure</h1>
+<p style="text-align:justify;">The font definition is basically an array of bytes, where each byte represents 8 horizontally aligned pixels. A set bit means a filled pixel, an unset bit is a clear pixel. For example, the 8x8 font needs 8 bytes per character (one byte per line), but 8x9 (9 pixels wide) would need 16 bytes per character (9 horizontal bits fit into 2 bytes). Likewise, the 24x17 font requires 24x3=72 bytes per character. <a href="https://github.com/ayoy/esp32-waveshare-epd/blob/master/main/font24.c" target="_blank" rel="noopener noreferrer">This is an example font definition in C</a>, with comments allowing for easier understanding of what goes where.</p>
+<p style="text-align:justify;">Now by shuffling individual bits, you can adjust the font's characters to your liking, or add new ones at the end, remembering that their codes would start from 127 (as the last character in the font file is the <code>~</code>, which corresponds to ASCII code 126). If you're fine with it then good for you :) but how cool would it be to have a tool that can do this automatically based on an input image?</p>
+<h1>The original <em>Font To Bytes</em></h1>
+<p style="text-align:justify;">When searching for a tool to prepare a custom font for use in embedded systems displays, I stumbled upon <a href="https://luckyresistor.me/font-to-byte/" target="_blank" rel="noopener noreferrer">Lucky Resistor's <em>Font To Bytes</em></a> application. It takes a PNG image with the font characters as input, such as this:</p>
+<p>[caption id="attachment_698" align="aligncenter" width="256"]<img class="alignnone size-full wp-image-698" src="{{ site.baseurl }}/assets/font1.png" alt="font1" width="256" height="32" /> Font input image. Source: <a href="https://luckyresistor.me/font-to-byte/">https://luckyresistor.me/font-to-byte/</a>[/caption]</p>
+<p style="text-align:justify;">The image is converted into a font source code file, for either Arduino or generic C/C++. Originally it only worked with 8x8 fonts, but the code (pretty neat by the way!) was prepared for adding new types of converters. I updated the code to Swift 4 (it was originally written back in 2015 in Swift 2) and added a parametrized converter that works with arbitrary font widths and heights:</p>
+<p>[caption id="attachment_699" align="alignnone" width="1688"]<img class="alignnone size-full wp-image-699" src="{{ site.baseurl }}/assets/screenshot-2019-02-10-at-16.49.24.png" alt="Screenshot 2019-02-10 at 16.49.24" width="1688" height="1228" /> <em>Font To Bytes</em> revamped by me.[/caption]</p>
+<h1>The multiplatform rewrite</h1>
+<p style="text-align:justify;">At that time this was enough for my needs – as I happen to be a Mac user, I got what I needed. But Twitter gave me a reality check as soon as I let the world know about my finding – guess what, not everyone is on a Mac. 💥</p>
+<p>https://twitter.com/ioPush_net/status/989455886203662336</p>
+<p style="text-align:justify;">At first I was like, <em>well, tough luck</em>. But then I realized that it could be a great opportunity to brush up on my C++ skills and get back to programming with Qt (after doing it for the last time with Qt 4 in 2011). Especially having no experience with modern C++, I took a chance to learn some of it by porting <em>Font To Bytes</em> to C++ with Qt (also to see what's new in Qt 5 – thankfully I found my way around it pretty quickly).</p>
+<p style="text-align:justify;">This is how my app looks like:</p>
+<p>[caption id="attachment_701" align="alignnone" width="1859"]<img class="alignnone size-full wp-image-701" src="{{ site.baseurl }}/assets/screenshot-2019-02-10-at-18.00.28.png" alt="Screenshot 2019-02-10 at 18.00.28.png" width="1859" height="1354" /> Font To Bytes running on Linux[/caption]</p>
+<p style="text-align:justify;">There are some changes/improvements compared to the original MacOS X version:</p>
+<ul>
+<li style="text-align:justify;">Font width and height is adjustable freely (that is, between 1 and 255px) and independently of each other.</li>
+<li style="text-align:justify;">Python List and Python Bytes output formats are added. The latter produces a Python <code>bytes</code> object, which is the optimal way to store font data (and can additionally benefit from freezing it in the firmware, as described in <a href="http://kapusta.cc/2018/03/31/epd/">one of my previous blog posts</a>). New types of converters can still be easily added if need be.</li>
+<li style="text-align:justify;">Besides the GUI application, a command line tool is there for those that don't need the UI or don't want to use Qt for some reason:</li>
+</ul>
+<p>[caption id="attachment_media-66" align="alignnone" width="2012"]<img class="alignnone size-full wp-image-702" src="{{ site.baseurl }}/assets/screenshot-2019-02-10-at-18.16.39.png" alt="Screenshot 2019-02-10 at 18.16.39.png" width="2012" height="1184" /> <em>f2b</em> command line utility[/caption]</p>
+<p style="text-align:justify;">The code is available from <a href="https://github.com/ayoy/font2bytes" target="_blank" rel="noopener noreferrer">GitHub</a>, together with example font input images and templates. The command-line tool depends only on <code>libpng</code> (and CMake for building), while the GUI app requires Qt 5. I tested it on Mac OS and Kubuntu with no (obvious) issues. The GUI app *should* work fine on Windows, but I had no way of testing it so far.</p>
+<p style="text-align:justify;">Thanks for reading through, and in case you happen to use the app, be sure to let me know of any issues you've encountered.</p>

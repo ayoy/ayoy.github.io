@@ -1,0 +1,31 @@
+---
+layout: page
+title: About
+date: 2017-11-21 18:38:32.000000000 +01:00
+type: page
+parent_id: '0'
+published: true
+password: ''
+status: publish
+categories: []
+tags: []
+meta:
+  sharing_disabled: a:1:{i:0;i:1;}
+  switch_like_status: a:1:{i:0;i:1;}
+  _publicize_pending: '1'
+  _thumbnail_id: '44'
+author:
+  login: ayoy
+  email: dominik@kapusta.cc
+  display_name: Dominik
+  first_name: ''
+  last_name: ''
+permalink: "/about/"
+---
+I am a software engineer and I do iOS development to make a living. I however occasionally fiddling with embedded electronics.
+
+In the modern era of high-level programming languages, I sometimes find myself longing for pointer arithmetics, bit manipulation, or at least some solid C++ coding. It might be that I'm getting old, but I'd rather keep up that drive.
+
+![](/assets/about-tt.jpg)
+
+It's me in the photo. A glimpse of what I normally do on weekends. Not the perfect aero tuck here, but I like this pic a lot. And I have since lowered the front by a significant margin ;)

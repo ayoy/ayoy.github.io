@@ -1,0 +1,224 @@
+---
+layout: post
+title: Home-made Air Quality monitoring using WiPy
+date: 2017-12-02 00:18:34.000000000 +01:00
+type: post
+parent_id: '0'
+published: true
+password: ''
+status: publish
+categories:
+- embedded
+tags:
+- air quality
+- battery
+- pycom
+- python
+- wipy
+meta:
+  _thumbnail_id: '52'
+  _rest_api_published: '1'
+  _rest_api_client_id: "-1"
+  _publicize_job_id: '12051708398'
+  _publicize_done_external: a:2:{s:7:"twitter";a:1:{i:18932277;s:50:"https://twitter.com/ayoy/status/936910159967698946";}s:8:"facebook";a:1:{i:18932318;s:38:"https://facebook.com/10154932762817414";}}
+  _publicize_done_19076888: '1'
+  _wpas_done_18932277: '1'
+  publicize_twitter_user: ayoy
+  _publicize_done_19076940: '1'
+  _wpas_done_18932318: '1'
+  publicize_linkedin_url: https://www.linkedin.com/updates?discuss=&scope=39124373&stype=M&topic=6343414258214199296&type=U&a=tOtn
+  _publicize_done_19076937: '1'
+  _wpas_done_18932316: '1'
+author: Dominik Kapusta
+permalink: "/2017/12/02/home-made-air-quality-monitoring-using-wipy/"
+---
+<p style="text-align:justify;">Air quality has been a heated topic recently here in Poland. It all started a couple of years ago in Kraków, which is arguably the most polluted of big Polish cities. With growing awareness of the air pollution and its impact on health, people started designing solutions to monitor and improve air quality, while adjusting their daily routine to accommodate for the smog.</p>
+<p style="text-align:justify;">When I later moved (back) to Łódź, I noticed that pollution problem, although valid across the country, is far less recognized anywhere outside Kraków and Lesser Poland area. The air surely smells better here, but smog incidents still happen, yet informing and acting upon them is close to non-existent.</p>
+<p style="text-align:justify;">This was enough an excuse for me to try and set up the air quality monitoring system on my own while making first steps in the field of IoT.</p>
+<hr />
+<p><em><strong>This is the introductory post about the Air Quality Monitor. </strong>Check out also the <a href="http://kapusta.cc/2018/02/02/air-quality-monitor-revisited-lopy4-and-the-custom-pcb/" target="_blank" rel="noopener">follow-up blog post</a> where I write about switching from WiPy to LoPy4 and designing a custom-made PCB.</em></p>
+<hr />
+<h1></h1>
+<h1 style="text-align:justify;">Checklist</h1>
+<p style="text-align:justify;">Here comes a short summary of the project components:</p>
+<ul style="text-align:justify;">
+<li>particulate matter sensor – providing the key metric</li>
+<li>relative air humidity sensor – to get better insight into PM readings</li>
+<li>microcontroller – the heart of the system</li>
+<li>battery – to enable taking measurement outdoors</li>
+<li>packaging – to move away from the prototype board and make the project somewhat shippable.</li>
+</ul>
+<h2 style="text-align:justify;">Particulate matter sensor</h2>
+<p style="text-align:justify;">The sensor would take PM10 and PM2.5 readings (particulate matter of different granularity - those unfamiliar with the topic can read more about it <a href="https://en.wikipedia.org/wiki/Particulates" target="_blank" rel="noopener">on the internet</a>). Air quality measurements would be stored in a database and allow me to view results in a fairly real-time manner as well as analyze historical data.</p>
+<p style="text-align:justify;">I decided to go with PMS5003 air quality sensor that is a pretty popular low-cost device, communicates via UART and is good enough for personal use. For data storage and visualization I went with <a href="https://www.influxdata.com" target="_blank" rel="noopener">InfluxDB</a> and <a href="https://grafana.com" target="_blank" rel="noopener">Grafana</a>, as I had this setup already on my Raspberry Pi.</p>
+<h2 style="text-align:justify;">Relative air humidity sensor</h2>
+<p style="text-align:justify;">PMS5003 uses laser light scattering for measuring PM concentration and is reported to produce inaccurate data in high humidity conditions. That's because the laser sensor identifies water particles as dust. To have a general idea of the impact of humidity on PM measurement reliability I needed to incorporate a humidity sensor in the system.</p>
+<p style="text-align:justify;">I went with SHT10 digital temperature and humidity sensor that handles temperature between -40°C and 125°C and full 0-100% relative humidity range, and communicates via a custom 2-wire interface.</p>
+<h2 style="text-align:justify;">Microcontroller</h2>
+<p style="text-align:justify;">This is what I decided very early on. I bought a WiPy development board from <a href="https://pycom.io" target="_blank" rel="noopener">Pycom</a> someday and this looked like a perfect project to give it a spin. I also got an expansion board and a nice small transparent case. All Pycom products are based on the ESP32 chipset and incorporate MicroPython environment. I was told I was the first customer to try out the updated WiPy 3.0 with 4MB RAM and 8MB flash memory, built-in real-time clock and a handful of interfaces – head to <a href="https://pycom.io/product/wipy-3/" target="_blank" rel="noopener">the product page</a> for details.</p>
+<h2 style="text-align:justify;">Power source and packaging</h2>
+<p style="text-align:justify;">For a real-world application, I would need to take measurements outdoors. It still makes sense to measure indoor air quality, e.g. when you try to evaluate the need of installing a home air purifier. Still, I wanted to put it on the balcony, where I don't happen to have a power outlet available. <strong>The system needs to run on battery power</strong> – this changes a lot and takes the project to a whole different level. Which is great news to me, because the ultimate goal of this project is <strong>to learn things</strong> while doing cool and possibly useful stuff.</p>
+<p style="text-align:justify;">Speaking of battery, the WiPy Expansion Board comes with a LiPo battery connector and even a battery charger! And the Pycase has enough room to hold a small battery – so far so good.</p>
+<h1 style="text-align:justify;">More on battery</h1>
+<h2 style="text-align:justify;">Voltage</h2>
+<p style="text-align:justify;">So these are the components with their power input/output ratings:</p>
+<ul style="text-align:justify;">
+<li>WiPy runs on any voltage between 3.3V and 5.5V. It has a 3V3 output capable of sourcing up to 550mA, but no 5V output.</li>
+<li>PMS5003 air quality sensor transfers data using 3.3V UART, but requires 5V power supply.</li>
+<li>SHT1x series temperature/humidity sensors work with 3.3V</li>
+<li>a 1-cell Li-Poly battery has a nominal voltage of 3.7V, and a 2-cell battery rated at 7.4V would be too much. And too bulky too.</li>
+</ul>
+<p style="text-align:justify;">Confirmed, the air quality sensor won't even start when powered by a 1-cell battery. To convert the LiPo battery voltage to 5V I used this <a href="https://www.pololu.com/product/798" target="_blank" rel="noopener">tiny step-up voltage regulator</a> from Pololu, delivering up to 200mA output current which is just enough for PMS5003, according to the datasheet. Its small size ensured it would easily fit into the Pycase.</p>
+<h2 style="text-align:justify;">Capacity</h2>
+<p style="text-align:justify;">By fitting <em>a small battery</em> into Pycase I meant as small as 550mAh. At least that's what I was able to find online, matching the dimensions suggested on <a href="https://forum.pycom.io" target="_blank" rel="noopener">Pycom forum</a>. Given that PMS5003 could drain up to 200mA it becomes clear that the battery would last less than 3 hours powering just the sensor, let alone the microcontroller.</p>
+<p style="text-align:justify;">On the other hand, no one needs a constant measurement of air quality. Industry standard monitoring stations report data every hour or every couple of hours, but that is probably an hourly average of a couple of measurements. I thought I'd be reading the data every hour, but for testing purposes, I started doing it every 10 minutes, so that I didn't have to wait a long time to observe some meaningful set of data. Sensor's idle mode current rating of 5mA would ensure a couple dozens of hours on battery, which is kinda fine.</p>
+<h1 style="text-align:justify;">First run</h1>
+<p style="text-align:justify;">Although WiPy's MicroPython environment is fairly easy to embrace and arguably allows for faster development compared e.g. to C, it took me some time to get all the components working. Especially when it comes to SHT10 temperature/humidity sensor that required implementing its custom communication protocol with CRC checksum computation algorithm.</p>
+<p style="text-align:justify;">The high-level outline of the first working version looked like this:</p>
+<ol style="text-align:justify;">
+<li>Boot up</li>
+<li>Set up WiFi connection and get current time from NTP</li>
+<li>Start air quality sensor</li>
+<li>Read 11 measurements of PM2.5 and PM10 concentration
+<ul>
+<li>skip the first one since it's a bit inaccurate (I noticed it's always much lower than the rest)</li>
+<li>average the rest 10 readings</li>
+</ul>
+</li>
+<li>Read temperature and relative humidity</li>
+<li>Read battery voltage</li>
+<li>Post all the data to InfluxDB</li>
+<li>Turn off air quality sensor</li>
+<li>Sleep for 10 minutes</li>
+<li>Go to 3.</li>
+</ol>
+<h2 style="text-align:justify;">First disappointment</h2>
+<p style="text-align:justify;">I was very surprised to see that fully charged battery allowed for just around 3 hours of reading the data. Well, it's the first time in my life when I'm putting serious stuff on battery power and apparently <code>time.sleep()</code> is not how you normally sleep in the embedded world.</p>
+<p style="text-align:justify;">Enter the Deep Sleep.</p>
+<p style="text-align:justify;">The very cool feature that is implemented in the hardware and doesn't require additional configuration. According to <a href="https://docs.pycom.io/chapter/firmwareapi/pycom/machine/" target="_blank" rel="noopener">Pycom documentation</a>, it s<em>tops the CPU and all peripherals (including networking interfaces, if any). Execution is resumed from the main script, just as with a reset</em>. Simply replacing <code>time.sleep()</code> with <code>machine.deepsleep()</code> does the job and we're golden. According to Pycom, the chip needs as little as 25uA in deep sleep mode.</p>
+<p style="text-align:justify;">The script looks like this now:</p>
+<ol style="text-align:justify;">
+<li>Boot up</li>
+<li>Set up WiFi connection and get current time from NTP</li>
+<li>Start air quality sensor</li>
+<li>Read 11 measurements of PM2.5 and PM10 concentration
+<ul>
+<li>skip the first one since it's a bit inaccurate (I noticed it's always much lower than the rest)</li>
+<li>average the rest 10 readings</li>
+</ul>
+</li>
+<li>Turn off air quality sensor</li>
+<li>Read temperature and relative humidity</li>
+<li>Read battery voltage</li>
+<li>Post all the data to InfluxDB</li>
+<li>Deep Sleep for 10 minutes. After that time the device would reboot.</li>
+</ol>
+<h1 style="text-align:justify;">Digging deeper into battery drain</h1>
+<p style="text-align:justify;">While I was at battery usage optimization, I took the multimeter to figure out the actual current of the sensor. It turned out that it drains only around 75-90mA when active, so less than half of the datasheet value. On the other hand, it consumed as much as 8mA when in idle mode (with its EN pin set to low). My instant idea was "Hey, can I just turn off the power supply of the sensor instead of setting it to idle?".</p>
+<p style="text-align:justify;">Sure I can, but it comes at additional cost.</p>
+<p style="text-align:justify;">I can't just set the microcontroller pin to low to cut off the sensor because I'm not driving it from the microcontroller (it's 3.3V and the sensor needs 5V, plus microcontroller GPIO pins are not suited for driving loads such as 100mA). The only way I could do it would be adding a transistor switch driven by the microcontroller pin. This requires putting more components into an already tight fitting case.  I went with an n-MOSFET transistor with small 100Ω gate resistor and a diode placed parallel to the sensor, to protect from reverse current while switching. Perhaps I could have skipped the resistor and possibly the diode altogether. But it's been a while since I did any electronics stuff, and after all, I had just one sensor, so better safe than sorry.</p>
+<p style="text-align:justify;">This is the schematic of a power supply for the whole system. The NCP1402 is a boost voltage regulator.</p>
+<p style="text-align:justify;"><img class="alignnone size-full wp-image-56" src="{{ site.baseurl }}/assets/screen-shot-2017-11-27-at-08-39-46.png" alt="Screen Shot 2017-11-27 at 08.39.46.png" width="1574" height="1062" /></p>
+<p style="text-align:justify;">And here's more or less how it looked like in real world:</p>
+<p style="text-align:justify;"><img class="aligncenter size-full wp-image-59" src="{{ site.baseurl }}/assets/img_2975-21.jpg?w=810" alt="IMG_2975 2.JPG" width="405" height="540" /></p>
+<p style="text-align:justify;">Here the sensor is supplied directly with 5V from my universal power adapter made of iPad charger and stripped USB cable :)</p>
+<p style="text-align:justify;">I couldn't measure the leakage current with my multimeter, but according to the datasheet, it should be much less than 100uA which is over <strong>100 times less</strong> compared to the sensor running in idle mode. That's quite an impressive achievement, but getting it to<em> production</em> would require some non-trivial soldering job, considering limited space.</p>
+<h1 style="text-align:justify;">Second run</h1>
+<p style="text-align:justify;">This time I went out to test the circuit in the wild.</p>
+<p>[gallery ids="62,63" type="columns" link="file"]</p>
+<p style="text-align:justify;">I connected the battery-powered WiPy to the boost voltage regulator circuit on a prototype breadboard and put them in a lunchbox just to protect from heavy wind. The sensors were sticking out the box so that they would measure real data.</p>
+<p style="text-align:justify;">Measuring air quality, humidity, temperature and battery voltage every 10 minutes, the system ran for <strong>42 hours</strong> straight! Oh well, straight-ish – it could do better if it didn't break in the meantime. I implemented the humidity sensor in a way that it throws an exception whenever the CRC checksum is wrong or the ACK bit was not properly read. It turned out that due to a syntax error in the exception handler the script stopped and left the chip alive for 17 minutes until I noticed that something was wrong. The air quality sensor was already turned off at this phase of the script, and if you look at the graph below, you'll notice how big impact the active WiFi can have on power consumption. Within just 17 minutes it managed to drain 1/4 of the whole battery charge:</p>
+<p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2017/11/screen-shot-2017-11-20-at-21-43-09.png"><img class="alignnone size-full wp-image-64" src="{{ site.baseurl }}/assets/screen-shot-2017-11-20-at-21-43-09.png" alt="Screen Shot 2017-11-20 at 21.43.09.png" width="2718" height="1500" /></a></p>
+<p style="text-align:justify;">Please disregard the absolute values of the battery voltage as at that time I had been inaccurately interpreting ADC readings. The actual voltage span should have been approximately 4200-3600mV.</p>
+<hr />
+<p style="text-align:justify;">On a side note (or on the main topic, perhaps?), those weren't the best 42 hours air-quality-wise for my neighbourhood. But not so terrible either. Particulate matter levels <a href="http://www.who.int/mediacentre/factsheets/fs313/en/" target="_blank" rel="noopener">recommended by WHO</a> are 50μg/m<sup>3</sup> and 25μg/m<sup>3</sup> for PM10 and PM2.5 respectively, but these are mean 24-hour values. Still, by looking at the graph you could easily tell that the mean value would fall outside that range.</p>
+<p style="text-align:justify;">The impact of high humidity on the readout remains to be determined though, and I should have some more insights into it as the sensor gathers more data in different weather conditions.</p>
+<h1 style="text-align:justify;">Still a long way to go</h1>
+<p style="text-align:justify;">The 42 hours test gave pretty satisfactory results, especially that it could possibly have lasted even longer. I just needed to do something about the humidity sensor that was occasionally failing for me. I couldn't easily debug the issue and it appeared to be random, showing up for just one measurement and working perfectly fine next time.</p>
+<h2 style="text-align:justify;">Bulletproofing</h2>
+<p style="text-align:justify;">Given that SHT1x series sensors are in <em>not recommended for new design</em> state according to the manufacturer, I decided not to spend any more time on it and move on to more interesting stuff. I just added a watchdog timer to my system – it would reset the device if it didn't fall asleep for 30 seconds since waking up. This has effectively dealt with the humidity sensor issues, as usually already on next boot it worked just fine.</p>
+<h2 style="text-align:justify;">Time profiling</h2>
+<h3 style="text-align:justify;">0.1.0</h3>
+<p style="text-align:justify;">I added another timer just to measure the overall time the system was alive. In the current state, i.e. following the procedure:</p>
+<ol style="text-align:justify;">
+<li>Boot up</li>
+<li>Set up WiFi and RTC</li>
+<li>Measure air quality</li>
+<li>Measure temperature and humidity</li>
+<li>Measure battery voltage</li>
+<li>Upload data</li>
+<li>Sleep</li>
+</ol>
+<p style="text-align:justify;">the whole process lasted for around 16 seconds.</p>
+<h3 style="text-align:justify;">0.1.1 – Parallel measurements</h3>
+<p style="text-align:justify;">I don't have the exact breakdown of time taken per phase of the script, but clearly, the most lengthy task was to read 11 samples of air quality data. Some other tasks could have been performed while waiting for the sensor to gather data samples. Using MicroPython's <code>_thread</code> module I could easily offload temperature and humidity measurement to a separate thread. This saved up some time ending up in measurement duration at around 15.5 seconds.</p>
+<h3 style="text-align:justify;">0.1.2 – Set up network in background thread</h3>
+<p style="text-align:justify;">I could move the WiFi setup code to the background thread too since it wasn't required while reading sensors data. That shaved off a whole 3 seconds of the total time, to around 12.64s. Additionally, the WiFi would be on for a shorter time, since it's started further into the script, and that should save some battery life.</p>
+<h3 style="text-align:justify;">0.1.3 – Turn off printing timestamps</h3>
+<p style="text-align:justify;">Initially, I used local timestamps in the log to have clear visibility into what happens when, but that could now be ditched. It saved a tiny 20ms off the time, to 12.62s.</p>
+<h3 style="text-align:justify;">0.1.4 – Average less air quality measurements</h3>
+<p style="text-align:justify;">Instead of averaging 10 air quality readouts I decided to drop half of them and average only even ones. So I'm still averaging the data from similar time span, but only half of the data set. Skipping every second frame saved me almost another second, landing at <strong>11.720s, over 4 seconds (or 27 percent) less</strong> than initially.</p>
+<p style="text-align:justify;">Here's the visual summary of the performance evening:</p>
+<p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2017/11/screen-shot-2017-11-21-at-00-53-05.png"><img class="alignnone size-full wp-image-65" src="{{ site.baseurl }}/assets/screen-shot-2017-11-21-at-00-53-05.png" alt="Screen Shot 2017-11-21 at 00.53.05.png" width="2694" height="1156" /></a></p>
+<p style="text-align:justify;">One more thing to notice is that putting WiFi setup code in a separate thread caused the measurement duration to become more stable. Connecting to the wireless network is the most indeterministic process of the whole script time-wise, and now it got to be executed in parallel with (still much longer) UART reading of air quality sensor data.</p>
+<h3 style="text-align:justify;">0.2.0 – Fix air quality measurement and send data less frequently</h3>
+<p style="text-align:justify;">After doing some more testing of the air quality sensor itself, I noticed two things:</p>
+<ul style="text-align:justify;">
+<li>Readouts can vary widely during first 5 seconds since turning it on</li>
+<li>After that time it shows pretty consistent data, so averaging a couple of measurements shouldn't be needed.</li>
+</ul>
+<p style="text-align:justify;">I redesigned the script a little bit to first power on the sensor, then wait for 7 seconds, and after that average 5 consecutive readouts (still, just in case). That brought measurement duration further down to 10.920s, so already <strong>36%</strong> less than initially :)</p>
+<p style="text-align:justify;">The other thing I decided to implement was to read data every 10 minutes, but send it to the database only every hour (or precisely, whenever 6 data points are ready). This way the WiFi would only be used once every hour, roughly 6 times less frequently. The historical measurements needed a timestamp in order to be properly stored in the database (sending data points without a timestamp would have assigned all of them the current time and date), so I just had to use WiFi (to set up the real-time clock) once more, on every hard reset. I stored the data in a file on the chip's flash, which is kinda fine in this case, but for more frequent file access using the SD card would make more sense. Apart from the data file I also stored the available data points count in WiPy's NVRAM to ensure high performance, instead of reading the whole file from flash memory every time.</p>
+<h1 style="text-align:justify;">Shipping it</h1>
+<p style="text-align:justify;">As I iteratively developed somewhat stable software for the system, I could move on towards putting the components into one box and doing another real-life test.</p>
+<h2 style="text-align:justify;">Power supply circuit</h2>
+<p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2017/11/img29763.jpg"><img class="  wp-image-76 alignright" src="{{ site.baseurl }}/assets/img29763.jpg" alt="img29763" width="275" height="292" /></a></p>
+<p style="text-align:justify;">I had just about that much space to fit the voltage regulator and transistor switch. Given that Pycase holds a battery, and that it also contains inner walls in the bottom compartment (such as the ones holding the battery at the center), there were two options: try to fit within a very narrow 36x13mm space with some artisan two-layer PCB routing effort, or cut out the wall connecting screw holes and gain almost twice the width available. I was about to do some drilling anyway to route the cables, plus the yellow shape was unrealistic, and the two-layer PCB was not an option due to the 6mm height limit (mind the connectors!) so I went with destroying some part of the case for greater glory.</p>
+<p style="text-align:justify;">At first, I was considering THT elements, but I quickly realized that the TO-220 MOSFET package is larger than the whole voltage regulator board, so I had to give it a try with SMD. After a couple of iterations with KiCad I came up with the following:</p>
+<p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2017/11/screen-shot-2017-11-27-at-21-11-11.png"><img class="alignnone size-full wp-image-69" src="{{ site.baseurl }}/assets/screen-shot-2017-11-27-at-21-11-11.png" alt="Screen Shot 2017-11-27 at 21.11.11" width="2330" height="1260" /></a></p>
+<p style="text-align:justify;">And the same evening I made it happen:</p>
+<p>[gallery ids="70,71" type="square" columns="2" link="file"]</p>
+<ol style="text-align:justify;">
+<li>Please spare me the harsh critique, this was my first ever SMD job :)</li>
+<li>I got the 700mAh battery that still fits the case!</li>
+</ol>
+<h1 style="text-align:justify;">Voilà!</h1>
+<p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2017/11/20171125-img_3032-4.jpg"><img class="alignnone size-full wp-image-77" src="{{ site.baseurl }}/assets/20171125-img_3032-4.jpg" alt="20171125-IMG_3032-4" width="3733" height="2800" /></a></p>
+<p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2017/11/20171125-img_3041-2-e1511692456834.jpg"><img class="alignnone size-full wp-image-51" src="{{ site.baseurl }}/assets/20171125-img_3041-2-e1511692456834.jpg" alt="20171125-IMG_3041-2" width="3735" height="2592" /></a></p>
+<p style="text-align:justify;">The system velcroed to the wall as shown above, with version 0.1.4 of the script mentioned earlier, <strong>managed to run for</strong> <strong>80 hours</strong> without interruptions this time. This is more than 3 days and nights, or almost half a week. Not too bad already, and I disconnected it once the battery voltage dropped below 3700mV to avoid over-discharging (according to <a href="http://www.thedroneinfo.com/2015/05/13/how-to-care-and-feeding-of-your-lipo-battery/" target="_blank" rel="noopener">this great article on LiPo batteries</a>), but perhaps it could have run a bit longer since the battery itself has the circuit preventing it from over-discharging.</p>
+<p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2017/11/screen-shot-2017-11-29-at-21-54-27.png"><img class=" size-full wp-image-86 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2017-11-29-at-21-54-27.png" alt="0.1.4_grafana" width="2722" height="1506" /></a></p>
+<h1 style="text-align:justify;">Weatherproofing and final test</h1>
+<p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2017/11/20171128-img_3047.jpg"><img class="  wp-image-91 alignright" src="{{ site.baseurl }}/assets/20171128-img_3047.jpg" alt="20171128-IMG_3047.jpg" width="297" height="396" /></a></p>
+<p style="text-align:justify;">Although the sensors and the board are safe from the rain on my balcony, long exposure to high humidity could eventually do harm to the circuits. Putting everything inside a waterproof case is not really an option, because the air quality sensor, by definition, needs to work in the open air. The same applies to humidity sensor too.</p>
+<p style="text-align:justify;">I got an IP67-rated case and cut a huge hole to stick the sensor through its wall. The case is obviously not IP67 anymore, but sealing the vent with e.g. silicone or hot glue would work just fine, while also securing the sensor in place. I haven't yet decided what to use plus I have neither the glue gun nor the silicone, so I temporarily resorted to using the electrical tape (which is probably fine too but looks lame). Having put everything in the big case I could get rid of the Pycase and get even more space, but the battery and voltage regulator circuit were already so nicely integrated into the Pycase that I left it as is. That's how I become a victim of premature optimization ;)</p>
+<p style="text-align:justify;">The semi-weatherproof sensor circuit is now undergoing a test running the script version 0.2.0 (which transmits data hourly).</p>
+<p>[gallery ids="95,96" type="rectangular" link="file"]</p>
+<p style="text-align:justify;">The results look promising so far, with ~60% maximum battery voltage after 44 hours, compared to ~40% during the previous test.</p>
+<hr />
+<p style="text-align:justify;">I'm going to stop here, because the more I write about it, the more ideas come to my mind, and this post has (literally) outgrown my expectations length- and knowledge-wise. Partially because I wrote it while actively working on that project, and given that I will for sure continue improving it, I would like to finally deliver this blog post some day. Let's recap then.</p>
+<h1 style="text-align:justify;">Lessons learned</h1>
+<p style="text-align:justify;">This, in my case, could be a really long list, since these are my baby steps in hardware and embedded engineering. Let's try to be concise this time:</p>
+<ul style="text-align:justify;">
+<li>moving your projects a step further from the <em>prototype board</em> stage opens up a whole new tier of problems, not limited to software and hardware, but including some DIY challenges too,</li>
+<li>if you think your project goes too easy, try powering it from battery and aiming for some decent running time between charges,</li>
+<li>constant WiFi drains sooo much power! And then remember, that for your mobile phone using WiFi is still less battery-time-challenging than 3G/LTE data,</li>
+<li>you can optimize performance forever, it becomes pretty addictive once you see the results of your work,</li>
+<li>SMD soldering is a piece of cake – at least for a small number of simple items – if you haven't tried it, I totally recommend, although it works best with the right tools (most importantly a hot-air soldering station).</li>
+</ul>
+<h1 style="text-align:justify;">Next steps</h1>
+<p style="text-align:justify;">Since I ended up putting the project in a quite big case where there's still some room available, I'll probably get some huge battery, e.g. 2600mAh, so that it runs for &gt;10 days on a single charge.</p>
+<p style="text-align:justify;">I'd like to make the measurement data available publicly so that people in the closest area could have the info on air quality – especially that the nearest official AQ station is a few kilometres away and isn't very relevant to my neighbourhood. I'll have a look at some services providing <a href="http://mqtt.org" target="_blank" rel="noopener">MQTT</a> API, like <a href="http://thingspeak.com" target="_blank" rel="noopener">ThingSpeak</a> and <a href="http://io.adafruit.com" target="_blank" rel="noopener">Adafruit IO</a>.</p>
+<p style="text-align:justify;">Also, I preordered two <a href="https://pycom.io/product/lopy4/" target="_blank" rel="noopener">LoPy4</a> boards from Pycom and I expect to receive them before Christmas :) I'd be very interested to see how LoRa compares to WiFi with regard to power consumption.</p>
+<p style="text-align:justify;">Apparently, removing the expansion board and creating my own board for WiPy with just what I need would further reduce the power consumption. It sounds nice, but will also be a bit time consuming. Also in the end, the air quality sensor draws the most power and there's nothing to optimize on that side, so working too long on the board performance won't help for this very project.</p>
+<h1 style="text-align:justify;">Useful links</h1>
+<p style="text-align:justify;">Some of them were mentioned in the article already, but I'll gather them in one place:</p>
+<ul style="text-align:justify;">
+<li>The article that inspired me to work on performance optimization:<b> </b><a href="http://gammon.com.au/power" target="_blank" rel="noopener">Power saving techniques for microprocessors</a></li>
+<li>Further inspiration: <a href="https://github.com/petervojtek/diy/wiki/Arduino-with-Very-Low-Power-Consumption" target="_blank" rel="noopener">Arduino with Very Low Power Consumption</a></li>
+<li><a href="http://www.thedroneinfo.com/how-to-care-and-feeding-of-your-lipo-battery/" target="_blank" rel="noopener">How to care for LiPo batteries from thedroneinfo.com</a></li>
+</ul>
+<p>For those curious about the implementation, the complete script that my WiPy runs is available from my <a href="https://github.com/ayoy/upython-aq-monitor">GitHub repo</a>.</p>
+<p style="text-align:justify;">It was a long read, but I still hope you enjoyed it. Be sure to let me know if you didn't, and in case of any questions.</p>
+<p style="text-align:justify;">Thanks for having a look!</p>
+<hr />
+<p><em><strong>02/02/2018 update: </strong>in the meantime, I did some more work on the air quality monitor, including moving to LoPy4 and a custom-made PCB. Check out <a href="http://kapusta.cc/2018/02/02/air-quality-monitor-revisited-lopy4-and-the-custom-pcb/" target="_blank" rel="noopener">this blog post</a> for more information.</em></p>

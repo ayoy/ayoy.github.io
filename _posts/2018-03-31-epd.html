@@ -1,0 +1,178 @@
+---
+layout: post
+title: An efficient MicroPython library for E-Paper Display
+date: 2018-03-31 23:19:55.000000000 +02:00
+type: post
+parent_id: '0'
+published: true
+password: ''
+status: publish
+categories:
+- embedded
+tags:
+- e-ink
+- e-paper
+- epd
+- frozen modules
+- library
+- micropython
+- pycom
+- python
+- waveshare
+meta:
+  _thumbnail_id: '572'
+  _wpas_skip_18932277: '1'
+  _wpas_skip_18932316: '1'
+  _wpas_skip_18932318: '1'
+  _rest_api_published: '1'
+  _rest_api_client_id: "-1"
+  _publicize_job_id: '16332381599'
+  timeline_notification: '1522534796'
+  _oembed_490878f877ae89aa5a12597ebd317d8b: "{{unknown}}"
+  _publicize_done_external: a:2:{s:7:"twitter";a:1:{i:18932277;s:50:"https://twitter.com/ayoy/status/980745611388604418";}s:8:"facebook";a:1:{i:18932318;s:38:"https://facebook.com/10155210692672414";}}
+  _publicize_done_19076888: '1'
+  _wpas_done_18932277: '1'
+  publicize_twitter_user: ayoy
+  _publicize_done_19076940: '1'
+  _wpas_done_18932318: '1'
+author: Dominik Kapusta
+permalink: "/2018/03/31/epd/"
+excerpt: This time porting Python code to MicroPython wasn't only about fixing syntax
+  and API.  It turns out that for the e-paper display library that uses relatively
+  big amounts of data at once, you have to sweat a bit more to get satisfactory results.
+---
+<p style="text-align:justify;">I recently got a <a href="https://www.waveshare.com/1.54inch-e-paper-module-b.htm" target="_blank" rel="noopener">Waveshare E-Paper Display</a>, in order to learn more about displays – programming and using them with microcontrollers. I chose specifically the e-paper because of its features like very low power consumption (up to 8mA only when refreshing) and preserving the state when unpowered. The latter can be especially handy for battery-powered sensor devices. Think of an environmental sensor that measures data only once in a while and sleeps in between, but with e-paper, it can display e.g. the last measurement all the time without affecting battery life. For starters, I got the pretty small, 1.54" display, with three available colours, i.e. black, red, and no colour.</p>
+<p style="text-align:justify;">The Waveshare E-Paper Display (EPD) communicates via SPI, uses 6 pins for communication (which with power supply makes 8 in total). It comes with libraries for Arduino, Raspberry Pi (in Python and C++) and STM32, so you're all set on these platforms. For other environments, well, tough luck.</p>
+<h1>MicroPython implementation</h1>
+<p style="text-align:justify;">The Python library for Raspberry Pi uses PIL (Python Imaging Library) for displaying text and images. It's awesome because it greatly simplifies the implementation. PIL is however not available in MicroPython, so I had to resort to drawing text using fonts defined in the code as arrays.</p>
+<h2>Optimizations</h2>
+<p>Here's the example definition of a letter 'A' in a 24-pixel font:</p>
+<p>[code language='Bash']<br />
+# @2376 'A' (17 pixels wide)<br />
+0x00, 0x00, 0x00, #<br />
+0x00, 0x00, 0x00, #<br />
+0x00, 0x00, 0x00, #<br />
+0x1F, 0x80, 0x00, #    ######<br />
+0x1F, 0xC0, 0x00, #    #######<br />
+0x01, 0xC0, 0x00, #        ###<br />
+0x03, 0x60, 0x00, #       ## ##<br />
+0x03, 0x60, 0x00, #       ## ##<br />
+0x06, 0x30, 0x00, #      ##   ##<br />
+0x06, 0x30, 0x00, #      ##   ##<br />
+0x0C, 0x30, 0x00, #     ##    ##<br />
+0x0F, 0xF8, 0x00, #     #########<br />
+0x1F, 0xF8, 0x00, #    ##########<br />
+0x18, 0x0C, 0x00, #    ##       ##<br />
+0x30, 0x0C, 0x00, #   ##        ##<br />
+0xFC, 0x7F, 0x00, # ######   #######<br />
+0xFC, 0x7F, 0x00, # ######   #######<br />
+0x00, 0x00, 0x00, #<br />
+0x00, 0x00, 0x00, #<br />
+0x00, 0x00, 0x00, #<br />
+0x00, 0x00, 0x00, #<br />
+0x00, 0x00, 0x00, #<br />
+0x00, 0x00, 0x00, #<br />
+0x00, 0x00, 0x00, #<br />
+[/code]</p>
+<p style="text-align:justify;">Full font definition is available <a href="https://github.com/ayoy/micropython-waveshare-epd/blob/11c31c601ef144228fbfd969bb65a300a3aa3030/fonts/font24.py" target="_blank" rel="noopener">here</a>. 3x24 = 72 bytes are required for a single character. Now multiply it by the number of printable ASCII characters (95, in the 32-127 range) and you'll get 6840 items in the list. Even for the small 8-pixel font the list has 760 elements.</p>
+<p style="text-align:justify;">Similarly for images, to display an image you'll need a full-screen bitmap, which in case of my small 200x200px display is a list with 200x200/8 = 5000 bytes.</p>
+<p style="text-align:justify;">This brings up performance problems on all possible fronts: loading a font module is terribly slow and it generates huge memory overhead. Have a look:</p>
+<p>[code language="Python"]</p>
+<p>&gt;&gt;&gt; from machine import Timer<br />
+&gt;&gt;&gt; import time<br />
+&gt;&gt;&gt; import gc<br />
+&gt;&gt;&gt;<br />
+&gt;&gt;&gt; chrono = Timer.Chrono()<br />
+&gt;&gt;&gt; mem_free = gc.mem_free()<br />
+&gt;&gt;&gt; chrono.start() # start a timer<br />
+&gt;&gt;&gt; import font24<br />
+&gt;&gt;&gt; chrono.stop() # stop a timer after a module has loaded<br />
+&gt;&gt;&gt; print(mem_free - gc.mem_free())<br />
+36656<br />
+&gt;&gt;&gt; print(chrono.read()*1000)<br />
+1666.031</p>
+<p>[/code]</p>
+<p style="text-align:justify;">Over 30kB of RAM and over 1.5s to load a module 😱. But we're far from the optimal solution here. For starters, let's replace the list with bytes - <code>struct</code> can be used for that:</p>
+<p>[code language="Python"]<br />
+&gt;&gt;&gt; import ustruct as struct<br />
+&gt;&gt;&gt; import font24<br />
+&gt;&gt;&gt; data = struct.pack("%sB" % len(font24.data), *(font24.data))<br />
+[/code]</p>
+<p style="text-align:justify;">Now <code>data</code> is a <code>bytes</code> object with contents of <code>font24.data</code>. Furthermore, <code>bytes</code> is an immutable data structure, which is exactly what we need for font files, and it can allow MicroPython interpreter to optimize it better.</p>
+<p style="text-align:justify;">The optimized font file looks like <a href="https://github.com/ayoy/micropython-waveshare-epd/blob/master/fonts/font24.py" target="_blank" rel="noopener">this</a>. Well, you won't easily consult the individual letters anymore, but that's the price for it being FAST. Here's how fast:</p>
+<p>[code language="Python"]<br />
+&gt;&gt;&gt; chrono = Timer.Chrono()<br />
+&gt;&gt;&gt; mem_free = gc.mem_free()<br />
+&gt;&gt;&gt; chrono.start() # start a timer<br />
+&gt;&gt;&gt; import font24<br />
+&gt;&gt;&gt; chrono.stop() # stop a timer after a module has loaded<br />
+&gt;&gt;&gt; print(mem_free - gc.mem_free())<br />
+14240<br />
+&gt;&gt;&gt; print(chrono.read()*1000)<br />
+377.0546<br />
+[/code]</p>
+<p style="text-align:justify;">More than 4 times faster to load, with roughly a third of an original memory footprint. 💥🚀😎</p>
+<p>If this wasn't enough, we can go further.</p>
+<h3>Frozen modules</h3>
+<p style="text-align:justify;">A lengthy Python module, and especially a huge chunk of immutable binary data is a perfect candidate to be included in the firmware. It's not a trivial task as it includes building a firmware image yourself, but it's also not overly complicated. If it's something you haven't tried yet, I encourage you to give it a spin.</p>
+<ol>
+<li style="text-align:justify;">Get the Pycom MicroPython source code from GitHub:<br />
+<a href="https://github.com/pycom/pycom-micropython-sigfox" target="_blank" rel="noopener">https://github.com/pycom/pycom-micropython-sigfox</a></li>
+<li style="text-align:justify;"><strong>Recommended: </strong>check out the most recent tag, so that you build the release image, and not the current live image from git:<br />
+[code language="Bash"]<br />
+$ git tag # list available tags<br />
+1.11.0.b1<br />
+1.12.0.b1<br />
+1.13.0.b1<br />
+1.6.13.b1<br />
+v1.14.0.b1<br />
+v1.15.0.b1<br />
+v1.16.0.b1<br />
+v1.17.0.b1<br />
+v1.17.2.b1<br />
+$ git checkout v1.17.2.b1<br />
+[/code]</li>
+<li style="text-align:justify;">Follow the instructions in README closely on how to set up the build environment (the <em><a href="https://github.com/pycom/pycom-micropython-sigfox#the-esp32-version" target="_blank" rel="noopener">The ESP32 version</a></em> section) up to the point of building <code>mpy-cross</code></li>
+<li style="text-align:justify;">Actually, build <code>mpy-cross</code> according to instructions</li>
+<li style="text-align:justify;">Enter <code>esp32/frozen</code></li>
+<li style="text-align:justify;">Copy there all the <code>.py</code> files you need to be frozen in firmware</li>
+<li style="text-align:justify;">Go one level up, to <code>esp32</code> directory</li>
+<li style="text-align:justify;">Make a build for your board. In case of my LoPy4, the commands were:<br />
+[code language="Bash"]<br />
+$ make BOARD=LOPY4 clean<br />
+$ make BOARD=LOPY4 TARGET=boot -j9<br />
+$ make BOARD=LOPY4 TARGET=app -j9<br />
+$ make BOARD=LOPY4 flash<br />
+[/code]<br />
+Note on <code>-j9</code>: it is used to speed up building by parallelizing the compilation of independent objects. The number specifies the maximum number of jobs that can be run in parallel. As a rule of thumb, you can safely use <code>-j5</code> on dual-core machines and <code>-j9</code> on quad-core machines.</li>
+<li style="text-align:justify;">Flash the image according to the README.</li>
+</ol>
+<p style="text-align:justify;">Now you don't need your frozen modules' files on the flash because they're included in the firmware. Other than that you work with frozen modules the same way as with regular ones, i.e. you still import them using <code>import</code> statement, etc.</p>
+<p style="text-align:justify;">And here's how a module performs after freezing:</p>
+<p>[code language="Python"]</p>
+<p>&gt;&gt;&gt; chrono = Timer.Chrono()<br />
+&gt;&gt;&gt; mem_free = gc.mem_free()<br />
+&gt;&gt;&gt; chrono.start() # start a timer<br />
+&gt;&gt;&gt; import font24<br />
+&gt;&gt;&gt; chrono.stop() # stop a timer after a module has loaded<br />
+&gt;&gt;&gt; print(mem_free - gc.mem_free())<br />
+560<br />
+&gt;&gt;&gt; print(chrono.read()*1000)<br />
+16.80003</p>
+<p>[/code]</p>
+<p style="text-align:justify;">Here, the garbage collector is irrelevant because frozen modules are apparently already loaded into RAM together with the whole firmware, but as you can see, the improvement in import time is huge.</p>
+<p style="text-align:justify;">To recap the optimizations, we've tried:</p>
+<ul style="text-align:justify;">
+<li>list data: 36kB RAM, 1666ms to import</li>
+<li>bytes data: 14kB RAM, 377ms to import</li>
+<li>frozen bytes data: N/A (loaded with firmware), <strong>16ms to import </strong></li>
+</ul>
+<p style="text-align:justify;">Also, with a simple test program that draws a couple of shapes, prints a few strings and displays an image, the total available RAM remaining after the program has finished is around 2.4MB (with 2.55MB available at startup after loading firmware), when before optimizations it was at around 1.8MB.</p>
+<p><img class=" size-full wp-image-575 aligncenter" src="{{ site.baseurl }}/assets/img_8450.jpg" alt="IMG_8450.JPG" width="4032" height="3024" /></p>
+<h1>Library features</h1>
+<p style="text-align:justify;">In the current state, the library supports only the 1.54 inch two-colour black and red Waveshare display, but adding support for other EPDs should be a simple task. I'll maybe get some other unit to give it a try.</p>
+<p style="text-align:justify;">Apart from printing text, you can also draw lines (between any two points, i.e. not limited to horizontal and vertical) or rectangles and circles (both regular and filled).</p>
+<p>[caption id="attachment_582" align="alignright" width="269"]<img class="alignnone size-full wp-image-582" src="{{ site.baseurl }}/assets/epd-goinvent.gif" alt="epd-goinvent" width="269" height="212" /> #GOINVENT![/caption]</p>
+<p style="text-align:justify;">Drawing images is available via filling the frame buffer with raw image bytes (which is the fastest possible way, especially if you freeze the image data in firmware). It's not a very straightforward or flexible method though, as you have to convert your image to bytes beforehand. So I added support for loading a Windows-style 1-color BMP file directly. You can even display the bitmap at given coordinates, if it's smaller than the screen size – this should be helpful when combining images with text.</p>
+<p style="text-align:justify;">The library is available from <a href="https://github.com/ayoy/micropython-waveshare-epd" target="_blank" rel="noopener">GitHub</a>, and should you need the C/C++ version for plain ESP32, I also did it and it's in a <a href="https://github.com/ayoy/esp32-waveshare-epd" target="_blank" rel="noopener">separate repository</a> (although without the BMP file support). Let me know if you find any of it helpful and of course, contributions are welcome!</p>
+<p>&nbsp;</p>

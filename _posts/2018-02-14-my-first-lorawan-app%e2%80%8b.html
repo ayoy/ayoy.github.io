@@ -1,0 +1,215 @@
+---
+layout: post
+title: My first LoRaWAN app​
+date: 2018-02-14 18:46:27.000000000 +01:00
+type: post
+parent_id: '0'
+published: true
+password: ''
+status: publish
+categories:
+- embedded
+tags:
+- air quality
+- lopy
+- lora
+- lorawan
+- nano-gateway
+- thethingsnetwork
+- ttn
+meta:
+  _thumbnail_id: '533'
+  _wpas_skip_18932277: '1'
+  _wpas_skip_18932316: '1'
+  _wpas_skip_18932318: '1'
+  _rest_api_published: '1'
+  _rest_api_client_id: "-1"
+  _publicize_job_id: '14746322005'
+  timeline_notification: '1518630388'
+  _publicize_done_external: a:2:{s:7:"twitter";a:1:{i:18932277;s:50:"https://twitter.com/ayoy/status/964106122549448704";}s:8:"facebook";a:1:{i:18932318;s:38:"https://facebook.com/10155100878867414";}}
+  _publicize_done_19076888: '1'
+  _wpas_done_18932277: '1'
+  publicize_twitter_user: ayoy
+  _publicize_done_19076940: '1'
+  _wpas_done_18932318: '1'
+author: Dominik Kapusta
+permalink: "/2018/02/14/my-first-lorawan-app%e2%80%8b/"
+excerpt: This is a story of how I got the air quality sensor to transmit its data
+  via LoRa, from the balcony of my flat, over LoRaWAN nano-gateway to TTN router in
+  the Netherlands, then to my relay server elsewhere in Europe, and to the database
+  on the Raspberry Pi in the living room of the same flat. (Not) just because it can™.
+---
+<p style="text-align:justify;">After updating the <a href="http://kapusta.cc/2018/02/02/air-quality-monitor-revisited/" target="_blank" rel="noopener">Air Quality Monitor with LoPy4 board</a>, when I finally got it up and running with Wi-Fi, I moved on to working on LoRa connectivity. I previously had little to none experience with LoRa, so it took me some time, but it was totally worth it.</p>
+<p style="text-align:justify;">This is a story of how I got the air quality sensor to transmit its data via LoRa, from the balcony of my flat, over LoRaWAN nano-gateway to TTN router in the Netherlands, then to my relay server elsewhere in Europe, and to the database on the Raspberry Pi in the living room of the same flat. Just because it can™. Buckle up!</p>
+<p>[caption id="attachment_547" align="alignnone" width="1024"]<img class="alignnone size-large wp-image-547" src="{{ site.baseurl }}/assets/architecture.png?w=2048" alt="architecture" width="1024" height="188" /> The overview of LoRaWAN architecture. Source: <a href="https://www.thethingsnetwork.org/docs/" target="_blank" rel="noopener">https://www.thethingsnetwork.org/docs/</a>[/caption]</p>
+<h1 style="text-align:left;">But what's the big deal with LoRa?</h1>
+<p style="text-align:justify;">LoRa, as in "Low-Power Long-Range" is a wireless communication technology of relatively small bandwidth, with an effective range of up to several kilometres, or even more in the open area. It uses an unrestricted frequency band of 868MHz for Europe, 915MHz for Americas, Australia and New Zealand, and 470-510MHz for China.</p>
+<p style="text-align:justify;">Then, the <strong>LoRaWAN</strong> is a type of <em>Low Power Wide Area Network</em> (LPWAN), which uses LoRa connectivity. The LoRa-enabled end-devices (nodes) connect to the network (the internet) via <em>LoRaWAN gateways</em> in a similar fashion to mobile phones connecting to GSM network via GSM base stations. I mean, a node isn't assigned to a specific gateway (like in the case of WiFi, when you connect to the given router), but rather it can use any gateway that's in its range.</p>
+<p style="text-align:justify;">A LoRaWAN gateway has the internet connection and passes the data packets from the device (<em>uplink</em>) to the <em>LoRaWAN router</em>. The router then forwards them to the associated web service. It can also handle <em>downlink</em> messages, i.e. data packets sent from the web service back to the device, in response to received uplink messages.</p>
+<p style="text-align:justify;">The LoRa's bandwidth of only 0.3-50kbps is not suitable for every use case – you wouldn't certainly be streaming a video camera footage or even transferring files with it. But it's a great fit for connected devices such as various types of sensors (environmental, agricultural or industrial just to name a few) to exchange tiny bits of data. And, most importantly, as the name suggests, data transfer using LoRa requires significantly less power than other wireless technologies like Wi-Fi or Bluetooth LE. You can get more info about LoRa and LoRaWAN at the <a href="https://www.lora-alliance.org/technology" target="_blank" rel="noopener">LoRa Alliance website</a>.</p>
+<p style="text-align:justify;">While LoRa exists without LoRaWAN, as you can just set up a 1-1 connection between LoRa-enabled devices, I'll focus on LoRaWAN in this article.</p>
+<h1 style="text-align:left;">My setup</h1>
+<p style="text-align:justify;">Obviously, in order to make use of LoRaWAN, your node must be in range of a LoRaWAN gateway. This is not the case for me yet, but I'm working on getting one – BTW, it's not extremely expensive as you can build a decent GW for under €200 - <a href="https://github.com/ttn-zh/ic880a-gateway/wiki#ordering-the-parts" target="_blank" rel="noopener">see this document for a nice how-to</a>. Hope is not lost though, as you can actually turn a LoRa device into a so-called <em>nano-gateway</em>. A nano GW has some significant limitations – e.g. it requires a specific configuration for devices connecting to it. It's therefore not suitable for public use but works just fine for development, or for personal use.</p>
+<p>[caption id="attachment_533" align="aligncenter" width="580"]<img class="aligncenter  wp-image-533" src="{{ site.baseurl }}/assets/img_0651.jpg?w=2048" alt="IMG_0651" width="580" height="435" /> A LoPy4 serving as a LoRaWAN nano-gateway.[/caption]</p>
+<p style="text-align:justify;">Quite a while ago, in November last year, I preordered two <a href="http://pycom.io/product/lopy4/" target="_blank" rel="noopener">LoPy4</a> boards to evaluate LoRa connectivity myself. I received them mid-January, and for a first test, I wanted to connect my <a href="http://kapusta.cc/2017/12/02/home-made-air-quality-monitoring-using-wipy/">air quality monitor</a> to LoRaWAN. One of the boards would replace the WiPy in the sensor, and the other one would serve as a nano-gateway.</p>
+<p style="text-align:justify;">Setting up a nano-gateway is dead simple – it's <a href="https://docs.pycom.io/chapter/tutorials/lopy/lorawan-nano-gateway.html" target="_blank" rel="noopener">well documented</a> and you can get the most up-to-date sample code from <a href="https://github.com/pycom/pycom-libraries/tree/master/examples/lorawan-nano-gateway" target="_blank" rel="noopener">Pycom's GitHub</a>. Replacing WiPy with LoPy4 in the air quality monitor was a bit trickier and deserved <a href="http://kapusta.cc/2018/02/02/air-quality-monitor-revisited/">a separate blog post</a>, but here it is:</p>
+<p>[caption id="attachment_536" align="aligncenter" width="580"]<img class="alignnone  wp-image-536" src="{{ site.baseurl }}/assets/smyr.jpg" alt="smyr" width="580" height="435" /> The LoRa-enabled version of the Air Quality Monitor.[/caption]</p>
+<h1 style="text-align:left;">Connecting to LoRaWAN network</h1>
+<p style="text-align:justify;">Once you get the gateway up and running you need to connect it to the LoRaWAN router. There are a couple of public LoRaWAN network operators and <a href="https://www.thethingsnetwork.org" target="_blank" rel="noopener">The Things Network</a> is arguably the most popular one.</p>
+<h2 style="text-align:left;">Setting up the nano-gateway</h2>
+<p style="text-align:justify;">If you're within LoRaWAN network range and you don't need to make your own gateway you can skip this step.</p>
+<p style="text-align:justify;">Otherwise, after booting up the nano-gateway you need to register it at the TTN website. This is a simple process, already documented in many places, including <a href="https://docs.pycom.io/chapter/tutorials/lopy/lorawan-nano-gateway.html" target="_blank" rel="noopener">Pycom docs</a>, so I'll skip it here. It's also pretty straightforward and the only thing to remember when doing it for the nano-gateway is to be sure to check the "I'm using the legacy packet forwarder" checkbox.</p>
+<h2 style="text-align:left;">Creating a TTN Application</h2>
+<p style="text-align:justify;">To do something actually useful with your data you'll need to pass it on from TTN to the service that would handle and process it appropriately. This is done by an application, that you create and configure in <a href="https://console.thethingsnetwork.org" target="_blank" rel="noopener">TTN console</a>:</p>
+<p style="text-align:justify;"><img class="  wp-image-514 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-17-06-10.png" alt="Screen Shot 2018-02-13 at 17.06.10" width="580" height="567" /></p>
+<h2 style="text-align:left;">Setting up the node</h2>
+<p style="text-align:justify;">The node needs to be registered in the TTN too, and it's configured at the application scope:</p>
+<p style="text-align:justify;"><img class="  wp-image-515 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-17-11-42.png" alt="Screen Shot 2018-02-13 at 17.11.42" width="580" height="599" /></p>
+<p style="text-align:justify;">The important thing that you need to choose when configuring a LoRaWAN node is the authentication mode, i.e. how nodes are authorized with the application. Two modes are available: Over-the-Air Activation (<strong>OTAA</strong>), and Activation by Personalization (<strong>ABP</strong>). Although there are significant differences between these two, at the basic "my-first-app" level we don't need to go that deep into details.</p>
+<p style="text-align:justify;">For a proof-of-concept connecting to LoRaWAN, there's an example code for both OTAA and ABP nodes available from <a href="https://github.com/pycom/pycom-libraries/tree/master/examples/lorawan-nano-gateway" target="_blank" rel="noopener">GitHub</a> (<code>otaa_node.py</code> and <code>abp_node.py</code>). In my case, I had some troubles connecting the node using OTAA. It might be me, the faulty firmware at that time, or some other reason, but I saw people on Pycom's forum complaining that they couldn't make OTAA work with nano-gateway too. Anyways, I ended up going with ABP. It's as simple as copying the <em>Device Address</em>, <em>Application Session Key</em> and <em>Network Session Key</em> from device settings to the node script, and boom, it's online!</p>
+<p style="text-align:justify;"><img class="  wp-image-517 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-17-23-33.png" alt="Screen Shot 2018-02-13 at 17.23.33" width="580" height="434" /></p>
+<h1 style="text-align:left;">Communication over LoRa</h1>
+<p style="text-align:justify;">Once you connect the node to LoRaWAN, the communication is as simple as creating a socket and writing bytes to it. The following MicroPython code does that for LoPy4:</p>
+<p>[code language="Python"]<br />
+# create a LoRa socket<br />
+s = socket.socket(socket.AF_LORA, socket.SOCK_RAW)<br />
+# set the LoRaWAN data rate<br />
+s.setsockopt(socket.SOL_LORA, socket.SO_DR, 5)<br />
+# make the socket blocking<br />
+s.setblocking(True)<br />
+# send the data<br />
+payload = b'\x00\x01\x02\x03'<br />
+s.send(payload)<br />
+[/code]</p>
+<p style="text-align:justify;">If everything works, you should see the packet appear on the TTN application console.</p>
+<h2 style="text-align:left;">Sending actual data</h2>
+<p style="text-align:justify;">In case of my air quality sensor, I had several values to serialize and send. I went with the simple solution of converting numeric values to integers and writing them as bytes:</p>
+<p>[code language="Python"]<br />
+def to_bytes(self):<br />
+    # pm10 [ug/m^3] - int - 2b<br />
+    # pm25 [ug/m^3] - int - 2b<br />
+    # temp [K] - int - 2b<br />
+    # humidity [%] - int - 2b<br />
+    # voltage (mV) - int - 2b<br />
+    # duration (ms) - int - 2b<br />
+    # version - str</p>
+<p>    payload = b''<br />
+    payload += int(self.pm10).to_bytes(2, 'little')<br />
+    payload += int(self.pm25).to_bytes(2, 'little')<br />
+    temp_k = self.temperature + 273.15<br />
+    payload += int(temp_k*100).to_bytes(2, 'little')<br />
+    payload += int(self.humidity*100).to_bytes(2, 'little')<br />
+    payload += int(self.voltage).to_bytes(2, 'little')<br />
+    payload += int(self.duration).to_bytes(2, 'little')<br />
+    payload += self.version</p>
+<p>    return payload<br />
+[/code]</p>
+<p style="text-align:justify;">To simplify serializing temperature, I converted it to Kelvins (but adding e.g. 50 would work fine too) to avoid negative values for sub-zero °C data points. Multiplying by 100 allowed me to store temperature and humidity as integers while keeping the resolution of 2 fraction digits.</p>
+<h1 style="text-align:left;">Handling data at TTN</h1>
+<p style="text-align:justify;">TTN application allows you to define JavaScript handlers for decoding the payload, converting its fields and validating them before forwarding to your server. These handlers are not required, but they give you an opportunity to convert the binary payload to a pretty formatted JSON file, e.g. like this:</p>
+<p>[code language="Javascript"]<br />
+function bin2String(array) {<br />
+    var result = "";<br />
+    for (var i = 0; i &lt; array.length; i++) {<br />
+        result += String.fromCharCode(parseInt(array[i], 10));<br />
+    }<br />
+    return result;<br />
+}</p>
+<p>function Decoder(bytes, port) {<br />
+    var decoded = {};</p>
+<p>    decoded.pm10 = bytes[0] + (bytes[1]&lt;&lt;8);<br />
+    decoded.pm25 = bytes[2] + (bytes[3]&lt;&lt;8);<br />
+    decoded.temperature = ((bytes[5]&lt;&lt;8) + bytes[4])/100 - 273.15;<br />
+    decoded.humidity = ((bytes[7]&lt;&lt;8) + bytes[6])/100;<br />
+    decoded.vbatt = (bytes[9]&lt;&lt;8) + bytes[8];<br />
+    decoded.duration = (bytes[11]&lt;&lt;8) + bytes[10];<br />
+    decoded.version = bin2String(bytes.slice(12, bytes.length));</p>
+<p>    return decoded;<br />
+}<br />
+[/code]</p>
+<p style="text-align:justify;">The above code running in my TTN application can turn this payload:</p>
+<p>[code]<br />
+52 00 45 00 30 6B 29 22 0E 02 98 2A 30 2E 38 2E 30<br />
+[/code]</p>
+<p style="text-align:justify;">into the following JSON:</p>
+<p>[code]<br />
+{<br />
+    "duration": 10904,<br />
+    "humidity": 87.45,<br />
+    "pm10": 82,<br />
+    "pm25": 69,<br />
+    "temperature": 1.25,<br />
+    "vbatt": 526,<br />
+    "version": "0.8.0"<br />
+}<br />
+[/code]</p>
+<h1 style="text-align:left;">Consuming data</h1>
+<p style="text-align:justify;">Having preprocessed the raw payload we can pass it on to the destination. This is where TTN app integrations come into play. If you're fortunate enough to be using one of the listed services, you can take advantage of its dedicated built-in handler:</p>
+<p style="text-align:justify;"><img class="aligncenter  wp-image-518" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-17-30-02.png?w=414" alt="Screen Shot 2018-02-13 at 17.30.02" width="400" height="580" /></p>
+<p style="text-align:justify;">In all other cases, there's a generic HTTP Integration that allows you to forward the (optionally prettified) payload to the server of your choice. That was exactly my case, as I needed the data back at home, in the InfluxDB server running on my Raspberry Pi.</p>
+<p style="text-align:justify;">As InfluxDB comes with an HTTP API, I technically could set up the integration so that it points directly to the InfluxDB server (it would, however, require a different payload format than JSON). But for a more generic case, when you want to add another integration in future, it's better to keep the JSON format and forward it to the relay server that would process the data accordingly for all services you support.</p>
+<h2 style="text-align:left;">TTN-to-InfluxDB forwarding microservice</h2>
+<p style="text-align:justify;">My recipe for a minimal forwarding web service is:</p>
+<ol style="text-align:justify;">
+<li>Python and <a href="http://flask.pocoo.org" target="_blank" rel="noopener">Flask</a></li>
+<li>A hosting service of your choice (e.g. <a href="http://heroku.com" target="_blank" rel="noopener">Heroku</a> is free and very well established)</li>
+</ol>
+<p style="text-align:justify;">This will be really quick:</p>
+<p>[code language="Python"]<br />
+from flask import Flask, request, jsonify<br />
+import requests<br />
+app = Flask(__name__)</p>
+<p>@app.route('/aqi', methods=['POST'])<br />
+def forward_aqi():<br />
+    influx_response = influxdb(request.json['payload_fields'])<br />
+    success = len(influx_response) == 0<br />
+    return jsonify(success=success,<br />
+                   response=influx_response.decode('utf-8'))</p>
+<p>def influxdb(payload):<br />
+    influx_data = 'aqi,version={} pm25={},pm10={},temperature={},'\<br />
+                  'humidity={},voltage={},duration={}' \<br />
+        .format(payload['version'], payload['pm25'],<br />
+                payload['pm10'], payload['temperature'],<br />
+                payload['humidity'], payload['vbatt'],<br />
+                payload['duration'])<br />
+    return requests.post("http://ax616034.ngrok.io/write?db=mydb",<br />
+                         data=influx_data).content<br />
+[/code]</p>
+<p style="text-align:justify;">This is all the code required to set up a single-endpoint Python web service with Flask, that would read JSON data from POST payload, convert it to InfluxDB format and post it to the database. Welcome to Python!</p>
+<p style="text-align:justify;">Putting it on Heroku is another story, but it took me just a couple of minutes with the documentation found online. And it was my first experience with Heroku (yes, apparently I've been living in a cave).</p>
+<h2 style="text-align:left;">HTTP Integration at TTN</h2>
+<p style="text-align:justify;">This, again, is a no-brainer. Once the web service is up, all you have to do is pass the right URL to the HTTP Integration:</p>
+<p style="text-align:justify;"><img class="  wp-image-524 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-18-12-56-e1518544241816.png" alt="screen-shot-2018-02-13-at-18-12-56-e1518544223356.png" width="580" height="472" /></p>
+<p style="text-align:justify;">There are additional fields to fill in on that form, such as header fields, including authorization (highly recommended for a production server), but this is the minimal required configuration.</p>
+<h1 style="text-align:left;">Watch bytes flowing</h1>
+<p style="text-align:justify;">The HTTP integration with <code>lora-forwarder</code> was the last step. Now, given that the gateway is online, the node is in range, and TTN, Heroku and my Raspberry Pi are up, we should see the data appearing on a graph. Let's take a closer look at the single payload, sent at 22:18:39 CET.</p>
+<p style="text-align:justify;">Here you can see the node data reaching the gateway:</p>
+<p style="text-align:justify;"><img class="  wp-image-526 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-22-40-33.png" alt="Screen Shot 2018-02-13 at 22.40.33" width="580" height="342" /></p>
+<p style="text-align:justify;">The gateway recognizes the app and forwards the payload accordingly. The app decodes the payload to JSON:</p>
+<p style="text-align:justify;"><img class="  wp-image-527 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-22-40-44.png" alt="Screen Shot 2018-02-13 at 22.40.44" width="581" height="386" /></p>
+<p style="text-align:justify;">The JSON data, via HTTP Integration, is passed on to lora-forwarder, which posts it to InfluxDB:</p>
+<p>[caption id="attachment_528" align="aligncenter" width="580"]<img class="alignnone  wp-image-528" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-22-47-07.png" alt="Screen Shot 2018-02-13 at 22.47.07" width="580" height="277" /> Timestamps are in UTC here.[/caption]</p>
+<p style="text-align:justify;">InfluxDB is read by Grafana that displays the data:</p>
+<p style="text-align:justify;"><img class="  wp-image-529 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-22-49-27.png" alt="Screen Shot 2018-02-13 at 22.49.27" width="580" height="349" /></p>
+<p style="text-align:justify;">You might say "Cool, but why bother?". Well, this time there's far more to it than just "because you can".</p>
+<h1 style="text-align:left;">Why bother</h1>
+<h2 id="power" style="text-align:left;">Power consumption</h2>
+<p style="text-align:justify;">The LoPy4 board draws approximately 140mA current with wifi enabled. When LoRa is active, with wifi disabled, the current is not bigger than <strong>38mA</strong>. This is a huge saving, and that's what you could expect having learnt that LoRa is a low power network. But this is just the beginning.</p>
+<p style="text-align:justify;">If you think of sending 30 bytes of data via wifi, you'd normally assume that it's gonna take a couple of seconds. After the device turns on the radio, it scans for the known network, joins it, acquires IP address from DHCP, and then it can transmit the payload. It can take as long as 10 seconds, or even more if the router signal is poor.</p>
+<p style="text-align:justify;">Now the killer feature is that the node joins LoRaWAN much faster, plus you can actually store LoRaWAN connection state in the non-volatile memory and retrieve it next time you need to send data. In a long run, the node is able to send data immediately after switching on the radio, and the total time when the LoRa radio is on is measured in milliseconds.</p>
+<p style="text-align:justify;">Take the air quality sensor as an example. With wifi connectivity, it sent data in 6-measurement batches (every hour) and it ran for 2 weeks on a 2400mAh battery. With LoRa, I'm sending data one by one (every 10 minutes), and after 2 weeks the battery voltage dropped from 4.15V to 3.77V (still well above the 3.7V limit). And the air quality monitor is not the perfect example because with every measurement the sensor alone draws 200mA for around 10 seconds. If it only measured temperature and humidity, I'd expect it to work <strong>for years</strong>.</p>
+<hr />
+<p style="text-align:justify;"><strong>Update 20/02/2018:<br />
+</strong>I disconnected the sensor when the battery voltage dropped to 3.71V after <strong>22 days</strong> of uninterrupted uptime, which is over 50% longer than when working on WiFi.</p>
+<p><img class="  wp-image-566 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-02-19-at-23-29-30.png" alt="Screen Shot 2018-02-19 at 23.29.30" width="580" height="317" /></p>
+<hr />
+<h2></h2>
+<h2 style="text-align:left;">Range</h2>
+<p style="text-align:justify;">If constrained by wifi connectivity, you can't get more than a couple dozen metres of range for your device, maybe a couple hundred metres in open terrain with very well-matched high-gain antennas on both ends. This is a piece of cake for LoRa, where a range of several kilometres is nothing unusual.</p>
+<p style="text-align:justify;">Also, let me remind you that LoRaWAN infrastructure is not required if you'd like to take advantage of LoRa transmission. It's possible to set up a two-way 1-1 LoRa communication between two LoRa-enabled devices, where you have full control over the amount and format of data being transferred.</p>
+<h2 style="text-align:left;">Costs</h2>
+<p style="text-align:justify;">One would argue that for a long-range communication you could use GSM, especially with its IoT-friendly technologies like NB-IoT and LTE-M. In many situations, this is the only option and it's fine, but it comes at a cost. Firstly, you need the right hardware, and GSM-enabled devices are usually pretty expensive. And then there comes the service fee you need to pay to your GSM operator.</p>
+<p style="text-align:justify;">Now compare it to LoRa-enabled chips, that you can get for <a href="http://shop.imst.de/wireless-modules/lora-products/12/im880b-l-lorawan-long-range-radio-module?c=24" target="_blank" rel="noopener">as little as €15</a> with no additional recurring costs. For me, the choice is obvious, as long as I can ensure that the node will remain within the range of the gateway/receiver.</p>
+<p style="text-align:justify;">The other aspect is that in some cases by switching to LoRa you can decrease the complexity of your device. In my case for example, when sending data one measurement at a time, I don't need to track exact timestamps of data points anymore – this means I could get rid of the external RTC module. Not only it reduces the overall cost of the device, but it also simplifies the code (which is always welcome), and even improves battery life a tiny bit.</p>
+<hr />
+<p style="text-align:justify;">To sum up, after first trials, I am just amazed by LoRa and LoRaWAN technology. The possibilities are enormous if you consider the really long range, fantastic battery life and low overall deployment cost. As LoRaWAN is pretty much a social network at the moment, everyone can contribute to its expansion by setting up a gateway (the real one though, not the nano GW). I'm definitely getting one in the next couple of weeks and I'll try to make it useful not only for me but possibly for my neighbourhood, by deploying some devices around the building ;)</p>

@@ -1,0 +1,159 @@
+---
+layout: post
+title: 'Reducing tech debt in Base iOS app: Part 3 – automation'
+date: 2018-01-09 11:24:52.000000000 +01:00
+type: post
+parent_id: '0'
+published: true
+password: ''
+status: publish
+categories:
+- iOS
+tags:
+- automation
+- base
+- build time
+- fastlane
+- grafana
+- influxdb
+- jenkins
+- monitoring
+- tech debt
+- xcode
+meta:
+  _thumbnail_id: '340'
+  _publicize_job_id: '13383740393'
+  _wpas_skip_18932316: '1'
+  _wpas_skip_18932318: '1'
+  _wpas_skip_18932277: '1'
+  _rest_api_published: '1'
+  _rest_api_client_id: "-1"
+  _publicize_done_external: a:1:{s:8:"facebook";a:1:{i:18932318;s:38:"https://facebook.com/10155013910382414";}}
+  _publicize_done_19076940: '1'
+  _wpas_done_18932318: '1'
+author: Dominik Kapusta
+permalink: "/2018/01/09/reducing-tech-debt-in-base-ios-app-part-3-automation/"
+excerpt: Base iOS client version 3.5.2 is a build number 2259. Base 2.3 from January
+  2013 was a build number 270. Roughly 2000 builds in 5 years means roughly 8 builds
+  every week, and if you won't optimize it to be a streamlined task, it can become
+  a painful experience.
+---
+<p style="text-align:justify;">This is the third and final part of a series of blog posts related to limiting tech debt in Base iOS app. Take a look at <a href="http://kapusta.cc/2018/01/02/tech-debt-at-base-warnings/" target="_blank" rel="noopener">the first part</a> and <a href="http://kapusta.cc/2018/01/05/reducing-ios-tech-debt-at-base-part-2-build-time/" target="_blank" rel="noopener">the second part</a> if you like.</p>
+<h1 style="text-align:justify;">Why bother?</h1>
+<p style="text-align:justify;">Base iOS client version 3.5.2 is a build number 2259. Base 2.3 from January 2013 was a build number 270. Roughly 2000 builds in 5 years means roughly 8 builds every week, and if you won't optimize it to be a streamlined task, it can become a painful experience.</p>
+<p style="text-align:justify;">Other than just automating release builds, you might want to perform regular health checks of your project. Continuous integration helps in that by running unit tests and/or automated UI tests suites. But it can be additionally upgraded to collect some interesting data while already making builds.</p>
+<h2 style="text-align:justify;">Common tools</h2>
+<p style="text-align:justify;">We recently adopted <a href="http://fastlane.tools" target="_blank" rel="noopener">fastlane</a> to automate various tasks around our codebase. I'm not sure if it requires an introduction, but if you were living in a cave <strong>just like me</strong>, fastlane is a modern, good-looking automation tool, written in Ruby and developed very actively all the time. Not only it contains a great number of built-in actions but it also allows you to define your own actions or plugins that nicely integrate into it.</p>
+<p style="text-align:justify;">We run continuous integration using Jenkins, but that's not sexy at all so I'll just stop here by saying that we configured Jenkins jobs such way that they simply call fastlane to do all the heavy-lifting.</p>
+<h2 style="text-align:justify;">Uncommon tools</h2>
+<p style="text-align:justify;">What's perhaps more interesting, is that while we're running CI tasks we also gather additional information about the build, like the duration, warning count and code coverage stats. We store that information in <a href="https://www.influxdata.com/time-series-platform/influxdb/" target="_blank" rel="noopener">InfluxDB</a> – a lightweight time series database with HTTP API. We then visualize the data with <a href="http://grafana.com" target="_blank" rel="noopener">Grafana</a>. What is very important – <strong>both of these tools are available for free</strong> when you self-host them so you can give them a spin any time, and I recommend it. I personally run them at home on my RaspberryPi and use them for <a href="http://kapusta.cc/2017/12/02/home-made-air-quality-monitoring-using-wipy/" target="_blank" rel="noopener">some cool stuff</a>.</p>
+<h1 style="text-align:justify;">AppStore release builds</h1>
+<p style="text-align:justify;">Let's have a look at the list of AppStore release chores for Base App:</p>
+<ol style="text-align:justify;">
+<li>sync submodules</li>
+<li>install pods</li>
+<li>set desired build version</li>
+<li>update build number (check HockeyApp for the latest beta/RC build number and increment it)</li>
+<li>go to iTunesConnect; create a new app version</li>
+<li>go to Xcode; select AppStore scheme</li>
+<li>build and archive</li>
+<li>upload to iTunesConnect</li>
+<li>locate the Xcode archive</li>
+<li>compress debug symbols</li>
+<li>upload debug symbols to HockeyApp</li>
+<li>compress the whole Xcode archive</li>
+<li>upload the archive to Dropbox</li>
+</ol>
+<p style="text-align:justify;">It could take around 60-90 minutes to do all these things, possibly a little less if you focus solely on the release job. I mean, while waiting for a release build to compile, and then for various uploads to finish, you oftentimes decide to start a side task in the meantime (like a small bugfix, testing, documentation, <del>facebook</del>, etc.) that you'd still have to interrupt shortly in order to follow up with the release. In case you forget you were releasing an app, the process could extend up to a whole day...</p>
+<p style="text-align:justify;">Let's try to eliminate the human factor. The list of AppStore release chores for Base when using fastlane:</p>
+<ol style="text-align:justify;">
+<li>call <code>bundle exec fastlane submit version:X.Y.Z</code></li>
+<li>There's no point 2.</li>
+</ol>
+<p style="text-align:justify;">Oh, and it also fetches the most up-to-date certificates from Apple Developer Portal, I forgot about it because it just automagically happens while I'm moving on to other tasks of the day.</p>
+<p style="text-align:justify;"><img class="  wp-image-377 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-01-05-at-13-01-33.png?w=1262" alt="Screen Shot 2018-01-05 at 13.01.33" width="546" height="887" /></p>
+<p style="text-align:justify;">34 minutes? Not bad for a release build and uploading over 300MB of data (ipa file, dSYMs + Xcode archive) on my home internet connection. And all that happened while I've already been ~33 minutes into my next tasks*. 🚀🚀🚀</p>
+<p style="text-align:justify;">Yes, such a release <em>lane</em> (as fastlane calls its user-made scripts) doesn't come bundled with your copy of fastlane and you'd have to implement it yourself, but most of the time it's just a matter of using built-in fastlane actions with an occasional Ruby scripting**. Surely a doable thing and definitely worth the effort as it pays off quickly.</p>
+<p style="text-align:justify;">For what it's worth, I published a <a href="https://github.com/ayoy/fastlane-plugin-dropbox" target="_blank" rel="noopener">fastlane Dropbox plugin</a> that you might find useful if Dropbox is part of your release flow (or any other flow you'd want to automate for that matter).</p>
+<p style="text-align:justify;">[*] – <strong>Pro tip:</strong> it's a good idea to have another copy of your repository for creating AppStore builds (and for other automated tasks in general). This way you're not blocking your working copy of the repo with fastlane run, so you can freely switch branches, etc.</p>
+<p style="text-align:justify;">[**] – If you're allergic to Ruby, you can also write your Fastfiles in Swift! <a href="http://shashikantjagtap.net/first-impressions-fastlane-swift-ios/" target="_blank" rel="noopener">Read here</a> for more info.</p>
+<h2 style="text-align:justify;">Preparing beta builds</h2>
+<p style="text-align:justify;">There are significantly fewer steps to complete in order to create a beta build for HockeyApp – and these are a subset of the AppStore <em>lane</em>, so with minimal modifications, we got that case covered too. And even though we used to have a custom-made script for preparing beta builds, being able to replace it with fastlane was very relieving, as it's one thing less to care about.</p>
+<h1 style="text-align:justify;">Automated unit testing on CI</h1>
+<p style="text-align:justify;">The elementary task for continuous integration is building the app and running unit tests. With fastlane, it's as easy as calling its <code>scan</code> action, e.g. like this:</p>
+<p>[code language="Ruby"]<br />
+lane :unit_tests do<br />
+    scan(scheme: &quot;Example&quot;)<br />
+end<br />
+[/code]</p>
+<p style="text-align:justify;">It cleans the project, builds the app for testing and runs tests suite. It's widely configurable, so if you're new to fastlane, take a look at <a href="https://docs.fastlane.tools/actions/scan/#automating-the-whole-process" target="_blank" rel="noopener">the documentation</a> for detailed info on <code>scan</code>. For our case, provided that we prepend it with submodule update and pods install, we'd be good to go, only having to direct Jenkins to fastlane's output files.</p>
+<h2 style="text-align:justify;">Tracking build duration and warning count</h2>
+<p style="text-align:justify;">We were setting up fastlane for Jenkins just at the time of our <a href="http://kapusta.cc/2018/01/02/tech-debt-at-base-warnings/" target="_blank" rel="noopener">warnings crusade</a>, so we wanted to keep clear visibility into what's the current warning count and whether pull requests introduce any new warnings. We also gave it a shot with measuring CI build time – although completely unrelated to the local build time (our iOS CI runs on Mac minis that are OH SO SLOW), and prone to significant variations (dependent on the current load of the given Jenkins slave), it could still give some value to us.</p>
+<p style="text-align:justify;">Since <code>scan</code> can't build without running tests, and that's what we needed for measuring build time, we had to use a lower level  <code>xcodebuild</code> action. The flow is as follows:</p>
+<ol style="text-align:justify;">
+<li>update submodules</li>
+<li>install pods</li>
+<li>clean the project using <code>xcodebuild</code></li>
+<li>record current timestamp:</li>
+</ol>
+<p>[code language="Ruby"]<br />
+build_duration = Time.now<br />
+[/code]</p>
+<ol style="text-align:justify;" start="5">
+<li>build the project for testing using <code>xcodebuild</code></li>
+<li>store build duration using the recorded timestamp:</li>
+</ol>
+<p>[code language="Ruby"]<br />
+build_duration = Time.now - build_duration<br />
+[/code]</p>
+<ol style="text-align:justify;" start="7">
+<li>extract warning count from the log file:</li>
+</ol>
+<p>[code language="Ruby"]<br />
+warning_count = File.foreach(build_output_path)<br />
+                  .grep(/: warning:/).uniq.count<br />
+[/code]</p>
+<ol style="text-align:justify;" start="8">
+<li>extract build number and version from <code>Info.plist</code> file</li>
+<li>submit data to InfluxDB:</li>
+</ol>
+<p>[code language="Ruby"]<br />
+influx(<br />
+    tags: {<br />
+        branch: git_branch,<br />
+        build_number: current_build_number,<br />
+        version: current_version_name<br />
+    },<br />
+    values: {<br />
+        build_duration: build_duration,<br />
+        warning_count: warning_count<br />
+    }<br />
+)<br />
+[/code]</p>
+<p style="text-align:justify;"><em>Influx tags can be used later on to filter presented values.</em></p>
+<ol style="text-align:justify;" start="10">
+<li>eventually<strong>, run tests :)</strong> using <code>scan</code></li>
+<li>generate code coverage report using <code>slather</code>, but only on the master branch, because it takes a significant amount of time and we don't want to do it for every update to every pull request.</li>
+</ol>
+<h2 style="text-align:justify;">Visualizing data</h2>
+<p style="text-align:justify;">The data stored in InfluxDB is retrieved by Grafana to be visualized as graphs and/or tables:</p>
+<p>[caption id="attachment_379" align="aligncenter" width="1392"]<img class="alignnone size-full wp-image-379" src="{{ site.baseurl }}/assets/screen-shot-2018-01-08-at-09-10-23.png" alt="Screen Shot 2018-01-08 at 09.10.23" width="1392" height="674" /> This must be called a <em>locally consistent</em> data.[/caption]</p>
+<p style="text-align:justify;">As you can see, the build duration may differ wildly on the CI server, even for two builds done next to each other. But one could argue that after neglecting the spikes you can observe some kind of a trend line, and it doesn't even have to go down to indicate our build time optimization effort, because:</p>
+<ul style="text-align:justify;">
+<li>we set up Grafana only close to the end of the build time optimization effort,</li>
+<li>we have been adding more code to master branch all the time, so it must have required more time to compile.</li>
+</ul>
+<p style="text-align:justify;">On the other hand, the warning count graph does the job perfectly:</p>
+<p style="text-align:justify;"><img class=" size-full wp-image-380 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-01-08-at-09-02-52.png" alt="Screen Shot 2018-01-08 at 09.02.52" width="1386" height="670" /></p>
+<p style="text-align:justify;">You can see the build warnings count on master constantly getting lower, and the rapid slope around 20th of November is the merge of <code>UILocalNotification</code> rewrite – our last huge build health offender.</p>
+<p style="text-align:justify;">Also, notice the heart to the left of the graph title. It signifies that the alerting is enabled for this graph. It's configured so that whenever a data point with warning count greater than the current master occurs, it posts a notification to our HipChat room:</p>
+<p style="text-align:justify;"><img class="aligncenter size-full wp-image-381" src="{{ site.baseurl }}/assets/screen-shot-2017-11-22-at-21-03-38-e1515446324678.png" alt="Screen Shot 2017-11-22 at 21.03.38" width="1368" height="777" /></p>
+<p style="text-align:justify;">This way the right person could be blamed instantly ;)</p>
+<p style="text-align:justify;">Our whole Grafana dashboard is still a work in progress. Although it's pretty messy without additional filtering and with 2-month time span, you can easily filter by time range, branch, user or version to get the insights you're interested in:</p>
+<p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2018/01/screen-shot-2018-01-08-at-23-36-51.png" target="_blank" rel="noopener"><img class="alignnone size-full wp-image-384" src="{{ site.baseurl }}/assets/screen-shot-2018-01-08-at-23-36-51.png" alt="Screen Shot 2018-01-08 at 23.36.51" width="2042" height="1556" /></a></p>
+<p style="text-align:justify;">As a bonus, at the very bottom, there's a graph of the duration of local Xcode development build done by developers while working (when in the office, because our InfluxDB server is inaccessible from the outside). It uses custom Build Phases of Xcode project to mark the beginning of a build and compute the duration, and then reports the time alongside some metadata to InfluxDB.</p>
+<p style="text-align:justify;">The goal here was to get an idea on how long the average build (no matter clean or incremental) takes, and well, the number is <em>close to 30 seconds</em>, but I'm not quite sure what to do with it now. It's not actionable because the value is acceptable, given the big amount of code. I'd probably try and rework the script to calculate only clean build times.</p>
+<p style="text-align:justify;">We also kind of hoped to get the proof that new MacBook Pro compiles significantly faster and so the whole team needs an upgrade, but it doesn't seem to be the case this time ;)</p>
+<h1 style="text-align:justify;">Recap</h1>
+<p style="text-align:justify;">Automating common tasks around our codebase was the last remaining task of dealing with increased tech debt. During last two months, we resolved almost 400 warnings, reduced build time by half, started saving some significant amount of work time by offloading common tasks to the appropriate tools and gained much better visibility and control of our codebase health. The work is not by any means finished, but it has actually only started. However, after such a solid initial effort, following up will be much easier.</p>
+<p style="text-align:justify;">Thank you for reading through, and I hope it wasn't a total waste of time!</p>
