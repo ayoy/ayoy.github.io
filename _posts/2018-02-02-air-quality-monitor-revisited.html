@@ -3,6 +3,7 @@ layout: post
 title: 'Air Quality Monitor revisited: LoPy4 and the custom PCB'
 date: 2018-02-02 23:39:15.000000000 +01:00
 type: post
+comments: true
 parent_id: '0'
 published: true
 password: ''
@@ -126,3 +127,25 @@ apin = adc.channel(attn=1, pin='P16')<br />
 <p style="text-align:justify;"><a href="https://kapustacc.files.wordpress.com/2018/02/screen-shot-2018-01-26-at-00-04-57.png"><img class="alignnone size-large wp-image-498" src="{{ site.baseurl }}/assets/screen-shot-2018-01-26-at-00-04-57.png?w=2048" alt="Screen Shot 2018-01-26 at 00.04.57" width="1024" height="757" /></a></p>
 <p style="text-align:justify;">The above project got sent to the factory, and while writing this, I'm still waiting for the delivery. I'll keep you posted as the PCBs arrive, hope I'll manage to solder the micro USB port correctly :)</p>
 <p>Of course, the most up-to-date code for the device is available <a href="https://github.com/ayoy/upython-aq-monitor/tree/lora" target="_blank" rel="noopener">from Github, from the <code>lora</code> branch</a>.</p>
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+
+var disqus_config = function () {
+this.page.url = 'https://ayoy.github.io';  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = 'kapusta-cc'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://kapusta-cc.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+

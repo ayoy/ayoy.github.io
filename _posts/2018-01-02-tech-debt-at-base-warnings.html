@@ -3,6 +3,7 @@ layout: post
 title: 'Reducing tech debt in Base iOS app: Part 1 – warnings'
 date: 2018-01-02 11:14:13.000000000 +01:00
 type: post
+comments: true
 parent_id: '0'
 published: true
 password: ''
@@ -64,3 +65,25 @@ excerpt: Have a read to get a grasp of what can happen when you work hard on new
 <h1 style="text-align:justify;">Recap</h1>
 <p style="text-align:justify;">Fixing all the warnings in the project for sure feels rejuvenating. It improved the quality of the code, but it also made our work easier and more efficient. It's hard to measure the impact of these changes on the build time because the code changed drastically in some places, but I believe that it has improved in some way (at least for the build from Xcode, because it doesn't need to display 400 warnings anymore). If it's not the build time itself, the Xcode UI alone for sure seems faster for the above reason.</p>
 <p style="text-align:justify;">Still, build time optimization is the other big topic we tackled once the warnings got resolved, and I'll write about it in detail in the next post. And back to warnings, we are now able to automatically control build warnings count and ensure we don't introduce any new warnings to the master branch. I'll cover it too in the following posts, stay tuned for more!</p>
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+
+var disqus_config = function () {
+this.page.url = 'https://ayoy.github.io';  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = 'kapusta-cc'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://kapusta-cc.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+

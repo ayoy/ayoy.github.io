@@ -3,6 +3,7 @@ layout: post
 title: My first LoRaWAN app​
 date: 2018-02-14 18:46:27.000000000 +01:00
 type: post
+comments: true
 parent_id: '0'
 published: true
 password: ''
@@ -213,3 +214,25 @@ def forward_aqi():<br />
 <p style="text-align:justify;">The other aspect is that in some cases by switching to LoRa you can decrease the complexity of your device. In my case for example, when sending data one measurement at a time, I don't need to track exact timestamps of data points anymore – this means I could get rid of the external RTC module. Not only it reduces the overall cost of the device, but it also simplifies the code (which is always welcome), and even improves battery life a tiny bit.</p>
 <hr />
 <p style="text-align:justify;">To sum up, after first trials, I am just amazed by LoRa and LoRaWAN technology. The possibilities are enormous if you consider the really long range, fantastic battery life and low overall deployment cost. As LoRaWAN is pretty much a social network at the moment, everyone can contribute to its expansion by setting up a gateway (the real one though, not the nano GW). I'm definitely getting one in the next couple of weeks and I'll try to make it useful not only for me but possibly for my neighbourhood, by deploying some devices around the building ;)</p>
+
+<div id="disqus_thread"></div>
+<script>
+
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
+
+var disqus_config = function () {
+this.page.url = 'https://ayoy.github.io';  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = 'kapusta-cc'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://kapusta-cc.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
