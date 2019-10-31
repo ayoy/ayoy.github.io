@@ -34,7 +34,7 @@ meta:
   _publicize_done_19076940: '1'
   _wpas_done_18932318: '1'
 author: Dominik Kapusta
-permalink: "/2018/02/14/my-first-lorawan-app%e2%80%8b/"
+permalink: "/2018/02/14/my-first-lorawan-app/"
 excerpt: This is a story of how I got the air quality sensor to transmit its data
   via LoRa, from the balcony of my flat, over LoRaWAN nano-gateway to TTN router in
   the Netherlands, then to my relay server elsewhere in Europe, and to the database
@@ -71,79 +71,76 @@ excerpt: This is a story of how I got the air quality sensor to transmit its dat
 <p style="text-align:justify;"><img class="  wp-image-517 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-17-23-33.png" alt="Screen Shot 2018-02-13 at 17.23.33"/></p>
 <h1 style="text-align:left;">Communication over LoRa</h1>
 <p style="text-align:justify;">Once you connect the node to LoRaWAN, the communication is as simple as creating a socket and writing bytes to it. The following MicroPython code does that for LoPy4:</p>
-<p>[code language="Python"]<br />
-# create a LoRa socket<br />
-s = socket.socket(socket.AF_LORA, socket.SOCK_RAW)<br />
-# set the LoRaWAN data rate<br />
-s.setsockopt(socket.SOL_LORA, socket.SO_DR, 5)<br />
-# make the socket blocking<br />
-s.setblocking(True)<br />
-# send the data<br />
-payload = b'\x00\x01\x02\x03'<br />
-s.send(payload)<br />
-[/code]</p>
+<p><pre><code class="python"># create a LoRa socket
+s = socket.socket(socket.AF_LORA, socket.SOCK_RAW)
+# set the LoRaWAN data rate
+s.setsockopt(socket.SOL_LORA, socket.SO_DR, 5)
+# make the socket blocking
+s.setblocking(True)
+# send the data
+payload = b'\x00\x01\x02\x03'
+s.send(payload)
+</code></pre></p>
 <p style="text-align:justify;">If everything works, you should see the packet appear on the TTN application console.</p>
 <h2 style="text-align:left;">Sending actual data</h2>
 <p style="text-align:justify;">In case of my air quality sensor, I had several values to serialize and send. I went with the simple solution of converting numeric values to integers and writing them as bytes:</p>
-<p>[code language="Python"]<br />
-def to_bytes(self):<br />
-    # pm10 [ug/m^3] - int - 2b<br />
-    # pm25 [ug/m^3] - int - 2b<br />
-    # temp [K] - int - 2b<br />
-    # humidity [%] - int - 2b<br />
-    # voltage (mV) - int - 2b<br />
-    # duration (ms) - int - 2b<br />
-    # version - str</p>
-<p>    payload = b''<br />
-    payload += int(self.pm10).to_bytes(2, 'little')<br />
-    payload += int(self.pm25).to_bytes(2, 'little')<br />
-    temp_k = self.temperature + 273.15<br />
-    payload += int(temp_k*100).to_bytes(2, 'little')<br />
-    payload += int(self.humidity*100).to_bytes(2, 'little')<br />
-    payload += int(self.voltage).to_bytes(2, 'little')<br />
-    payload += int(self.duration).to_bytes(2, 'little')<br />
-    payload += self.version</p>
-<p>    return payload<br />
-[/code]</p>
+<p><pre><code class="python">def to_bytes(self):
+    # pm10 [ug/m^3] - int - 2b
+    # pm25 [ug/m^3] - int - 2b
+    # temp [K] - int - 2b
+    # humidity [%] - int - 2b
+    # voltage (mV) - int - 2b
+    # duration (ms) - int - 2b
+    # version - str
+
+    payload = b''
+    payload += int(self.pm10).to_bytes(2, 'little')
+    payload += int(self.pm25).to_bytes(2, 'little')
+    temp_k = self.temperature + 273.15
+    payload += int(temp_k*100).to_bytes(2, 'little')
+    payload += int(self.humidity*100).to_bytes(2, 'little')
+    payload += int(self.voltage).to_bytes(2, 'little')
+    payload += int(self.duration).to_bytes(2, 'little')
+    payload += self.version
+    return payload
+</code></pre></p>
 <p style="text-align:justify;">To simplify serializing temperature, I converted it to Kelvins (but adding e.g. 50 would work fine too) to avoid negative values for sub-zero °C data points. Multiplying by 100 allowed me to store temperature and humidity as integers while keeping the resolution of 2 fraction digits.</p>
 <h1 style="text-align:left;">Handling data at TTN</h1>
 <p style="text-align:justify;">TTN application allows you to define JavaScript handlers for decoding the payload, converting its fields and validating them before forwarding to your server. These handlers are not required, but they give you an opportunity to convert the binary payload to a pretty formatted JSON file, e.g. like this:</p>
-<p>[code language="Javascript"]<br />
-function bin2String(array) {<br />
-    var result = "";<br />
-    for (var i = 0; i &lt; array.length; i++) {<br />
-        result += String.fromCharCode(parseInt(array[i], 10));<br />
-    }<br />
-    return result;<br />
-}</p>
-<p>function Decoder(bytes, port) {<br />
-    var decoded = {};</p>
-<p>    decoded.pm10 = bytes[0] + (bytes[1]&lt;&lt;8);<br />
-    decoded.pm25 = bytes[2] + (bytes[3]&lt;&lt;8);<br />
-    decoded.temperature = ((bytes[5]&lt;&lt;8) + bytes[4])/100 - 273.15;<br />
-    decoded.humidity = ((bytes[7]&lt;&lt;8) + bytes[6])/100;<br />
-    decoded.vbatt = (bytes[9]&lt;&lt;8) + bytes[8];<br />
-    decoded.duration = (bytes[11]&lt;&lt;8) + bytes[10];<br />
-    decoded.version = bin2String(bytes.slice(12, bytes.length));</p>
-<p>    return decoded;<br />
-}<br />
-[/code]</p>
+<p><pre><code class="Javascript">function bin2String(array) {
+    var result = "";
+    for (var i = 0; i &lt; array.length; i++) {
+        result += String.fromCharCode(parseInt(array[i], 10));
+    }
+    return result;
+}
+
+function Decoder(bytes, port) {
+    var decoded = {};
+    decoded.pm10 = bytes[0] + (bytes[1]&lt;&lt;8);
+    decoded.pm25 = bytes[2] + (bytes[3]&lt;&lt;8);
+    decoded.temperature = ((bytes[5]&lt;&lt;8) + bytes[4])/100 - 273.15;
+    decoded.humidity = ((bytes[7]&lt;&lt;8) + bytes[6])/100;
+    decoded.vbatt = (bytes[9]&lt;&lt;8) + bytes[8];
+    decoded.duration = (bytes[11]&lt;&lt;8) + bytes[10];
+    decoded.version = bin2String(bytes.slice(12, bytes.length));
+    return decoded;
+}
+</code></pre></p>
 <p style="text-align:justify;">The above code running in my TTN application can turn this payload:</p>
-<p>[code]<br />
-52 00 45 00 30 6B 29 22 0E 02 98 2A 30 2E 38 2E 30<br />
-[/code]</p>
+<p><pre><code>52 00 45 00 30 6B 29 22 0E 02 98 2A 30 2E 38 2E 30
+</code></pre></p>
 <p style="text-align:justify;">into the following JSON:</p>
-<p>[code]<br />
-{<br />
-    "duration": 10904,<br />
-    "humidity": 87.45,<br />
-    "pm10": 82,<br />
-    "pm25": 69,<br />
-    "temperature": 1.25,<br />
-    "vbatt": 526,<br />
-    "version": "0.8.0"<br />
-}<br />
-[/code]</p>
+<p><pre><code class="json">{
+    "duration": 10904,
+    "humidity": 87.45,
+    "pm10": 82,
+    "pm25": 69,
+    "temperature": 1.25,
+    "vbatt": 526,
+    "version": "0.8.0"
+}
+</code></pre></p>
 <h1 style="text-align:left;">Consuming data</h1>
 <p style="text-align:justify;">Having preprocessed the raw payload we can pass it on to the destination. This is where TTN app integrations come into play. If you're fortunate enough to be using one of the listed services, you can take advantage of its dedicated built-in handler:</p>
 <p style="text-align:justify;"><img class="aligncenter  wp-image-518" src="{{ site.baseurl }}/assets/screen-shot-2018-02-13-at-17-30-02.png?w=414" alt="Screen Shot 2018-02-13 at 17.30.02"/></p>
@@ -156,26 +153,28 @@ function bin2String(array) {<br />
 <li>A hosting service of your choice (e.g. <a href="http://heroku.com" target="_blank" rel="noopener">Heroku</a> is free and very well established)</li>
 </ol>
 <p style="text-align:justify;">This will be really quick:</p>
-<p>[code language="Python"]<br />
-from flask import Flask, request, jsonify<br />
-import requests<br />
-app = Flask(__name__)</p>
-<p>@app.route('/aqi', methods=['POST'])<br />
-def forward_aqi():<br />
-    influx_response = influxdb(request.json['payload_fields'])<br />
-    success = len(influx_response) == 0<br />
-    return jsonify(success=success,<br />
-                   response=influx_response.decode('utf-8'))</p>
-<p>def influxdb(payload):<br />
-    influx_data = 'aqi,version={} pm25={},pm10={},temperature={},'\<br />
-                  'humidity={},voltage={},duration={}' \<br />
-        .format(payload['version'], payload['pm25'],<br />
-                payload['pm10'], payload['temperature'],<br />
-                payload['humidity'], payload['vbatt'],<br />
-                payload['duration'])<br />
-    return requests.post("http://ax616034.ngrok.io/write?db=mydb",<br />
-                         data=influx_data).content<br />
-[/code]</p>
+<p><pre><code language="Python">from flask import Flask, request, jsonify
+import requests
+
+app = Flask(__name__)
+
+@app.route('/aqi', methods=['POST'])
+def forward_aqi():
+    influx_response = influxdb(request.json['payload_fields'])
+    success = len(influx_response) == 0
+    return jsonify(success=success,
+                   response=influx_response.decode('utf-8'))
+
+def influxdb(payload):
+    influx_data = 'aqi,version={} pm25={},pm10={},temperature={},'\
+                  'humidity={},voltage={},duration={}' \
+        .format(payload['version'], payload['pm25'],
+                payload['pm10'], payload['temperature'],
+                payload['humidity'], payload['vbatt'],
+                payload['duration'])
+    return requests.post("http://ax616034.ngrok.io/write?db=mydb",
+                         data=influx_data).content
+</code></pre></p>
 <p style="text-align:justify;">This is all the code required to set up a single-endpoint Python web service with Flask, that would read JSON data from POST payload, convert it to InfluxDB format and post it to the database. Welcome to Python!</p>
 <p style="text-align:justify;">Putting it on Heroku is another story, but it took me just a couple of minutes with the documentation found online. And it was my first experience with Heroku (yes, apparently I've been living in a cave).</p>
 <h2 style="text-align:left;">HTTP Integration at TTN</h2>
