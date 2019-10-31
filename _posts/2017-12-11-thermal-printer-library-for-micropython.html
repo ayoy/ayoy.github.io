@@ -52,13 +52,13 @@ excerpt: I recently got a thermal printer and adapted its Python library to Micr
 <p style="text-align:justify;">The go-to solution is the Adafruit's <a href="https://www.adafruit.com/product/597" rel="noopener">Mini Thermal Receipt Printer</a>, and it's easily available in Europe too. There's a library for Arduino and Python provided by Adafruit, as well as some example code. At $50 however (or over €60 where I live) I deemed it a bit too pricey for a toy with no real-life application in mind (yet).</p>
 <p style="text-align:justify;">There are obviously plenty of thermal printers on AliExpress, so I went there and found one in a similar shape, hoping that it would come with the same internals and communication protocol too. Sacrificing availability for a lower price, I ordered it and patiently waited for the shipment.</p>
 <h1 style="text-align:justify;">4 weeks later</h1>
-<p style="text-align:justify;"><img class="alignnone size-full wp-image-247" src="{{ site.baseurl }}/assets/img_3101-2-e1512977055460.jpg" alt="IMG_3101 2" width="2773" height="2773" /></p>
+<p style="text-align:justify;"><img class="alignnone size-full wp-image-247" src="{{ site.baseurl }}/assets/img_3101-2-e1512977055460.jpg" alt="IMG_3101 2"/></p>
 <p style="text-align:justify;">When I unwrapped the package, I noticed that my printer had a different connector than the Adafruit printer. That wasn't a big deal though, as the only outlets you need for a thermal printer are power and serial port. You can even skip the printer TX pin if you won't be checking the paper status. All of these pins were provided on my printer's connector so I was ready to give it a spin.</p>
-<p style="text-align:justify;"><img class="alignnone size-full wp-image-251" src="{{ site.baseurl }}/assets/img_3102.jpg" alt="IMG_3102" width="4032" height="3024" /></p>
+<p style="text-align:justify;"><img class="alignnone size-full wp-image-251" src="{{ site.baseurl }}/assets/img_3102.jpg" alt="IMG_3102"/></p>
 <h1 style="text-align:justify;">First test</h1>
 <p style="text-align:justify;">I wanted to check if it works with <a href="https://github.com/adafruit/Adafruit-Thermal-Printer-Library">Adafruit C++ library for Arduino</a>. I set up a test circuit with ATMega-328P microcontroller, ran the example code and it worked! Well, sort of.</p>
 <p style="text-align:justify;">I could see the paper coming out of the printer, and it had words printed on it. Not all of them though, given what was in the source code. But as you can see from the photo, I powered it using the iPad charger that's reportedly capable of sourcing up to 2A@5V DC.</p>
-<p style="text-align:justify;"><img class="size-full wp-image-253 aligncenter" src="{{ site.baseurl }}/assets/img_3105-e1512978297745.jpg?w=1032" alt="img_3105.jpg" width="516" height="516" /></p>
+<p style="text-align:justify;"><img class="size-full wp-image-253 aligncenter" src="{{ site.baseurl }}/assets/img_3105-e1512978297745.jpg" alt="img_3105.jpg"/></p>
 <p style="text-align:justify;">The printer, according to datasheet needs around 1.5A at 5-9V DC, so technically it shouldn't be a problem. However a friend of mine that bought the same printer at the same time powered it with 8V DC and got a flawless printout, so I knew I needed to sort out the power supply.</p>
 <p style="text-align:justify;">In fact, the next day when I connected it to the shiny new 2A 9V DC power adapter, the example code for Adafruit Arduino library worked perfectly fine with all the features listed in the example program, such as printing barcodes, QR codes, and bitmaps.</p>
 <p style="text-align:justify;">Having confirmed that my printer works with Adafruit library, I went on to get it working with LoPy from <a href="http://pycom.io" target="_blank" rel="noopener">Pycom</a>.</p>
@@ -72,7 +72,7 @@ excerpt: I recently got a thermal printer and adapted its Python library to Micr
 <li>removed image printing method, because it depended on Python Imaging Library that apparently is not available in MicroPython.</li>
 </ol>
 <p>&nbsp;</p>
-<p>[caption id="attachment_255" align="aligncenter" width="497"]<img class="  wp-image-255 aligncenter" src="{{ site.baseurl }}/assets/img_3112.jpg" alt="IMG_3112" width="497" height="663" /> This is what happens when you omit a stop bit.[/caption]</p>
+<p>[caption id="attachment_255" align="aligncenter" width="497"]<img class="  wp-image-255 aligncenter" src="{{ site.baseurl }}/assets/img_3112.jpg" alt="IMG_3112"/> This is what happens when you omit a stop bit.[/caption]</p>
 <p>&nbsp;</p>
 <p style="text-align:justify;">Still not bad for the first try ;) The next step was to get the UART's stop bits right, and then it started to look similar to what I saw on the ATMega with Adafruit's library. I then followed up with some improvements, including:</p>
 <ol style="text-align:justify;">
@@ -86,7 +86,7 @@ excerpt: I recently got a thermal printer and adapted its Python library to Micr
 </li>
 </ol>
 <p style="text-align:justify;">And that's how I eventually got it right. The underscored indent before "Large" that is visible in the photo below got fixed in the meantime too.</p>
-<p style="text-align:justify;"><img class="  wp-image-257 aligncenter" src="{{ site.baseurl }}/assets/img_31131.jpg?w=1536" alt="IMG_3113" width="554" height="739" /></p>
+<p style="text-align:justify;"><img class="  wp-image-257 aligncenter" src="{{ site.baseurl }}/assets/img_31131.jpg" alt="IMG_3113"/></p>
 <p style="text-align:justify;">Just so you know, printing with the lib is <strong>dead simple</strong>. For regular text it boils down to just calling <code>println()</code>:</p>
 <p>[code language="python"]</p>
 <p>from Adafruit_Thermal import *<br />

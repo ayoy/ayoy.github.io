@@ -41,7 +41,7 @@ excerpt: Accidentally inspired by my colleagues during a casual chat, I develope
   a Mac.
 ---
 <p style="text-align:justify;">A couple of months ago I did a strong effort towards automating build-related tasks of our iOS app at <a href="http://lab.getbase.com" target="_blank" rel="noopener">Base</a> (you can read more on that in <a href="http://kapusta.cc/2018/01/09/reducing-tech-debt-in-base-ios-app-part-3-automation/">my previous blog post</a>). The result was amazing, especially when it comes to preparing AppStore submissions, that normally require <a href="https://kapustacc.files.wordpress.com/2018/01/screen-shot-2018-01-05-at-13-01-33.png" target="_blank" rel="noopener">much more effort</a> than just doing a release build. Our team really enjoyed the new tools:</p>
-<p>[caption id="attachment_452" align="alignnone" width="1024"]<img class="alignnone size-large wp-image-452" src="{{ site.baseurl }}/assets/hipchat-triggered-e1515998330458.png?w=2048" alt="hipchat-triggered" width="1024" height="816" /> https://www.youtube.com/watch?v=NMS2VnDveP8[/caption]</p>
+<p>[caption id="attachment_452" align="alignnone" width="1024"]<img class="alignnone size-large wp-image-452" src="{{ site.baseurl }}/assets/hipchat-triggered-e1515998330458.png?w=2048" alt="hipchat-triggered"/> https://www.youtube.com/watch?v=NMS2VnDveP8[/caption]</p>
 <p style="text-align:justify;">Siri support aside, the button instantly caught my attention. It sounded like a simple project with (somewhat) real-life use case. My friend was in need and I could help him out, possibly sparking his and our other colleagues' interest in learning more about embedded programming. And, after all, you always wanted a big button on your desk for whatever purpose, admit it.</p>
 <h1 style="text-align:justify;">Scope</h1>
 <p style="text-align:justify;">I defined the following requirements straight off:</p>
@@ -52,13 +52,13 @@ excerpt: Accidentally inspired by my colleagues during a casual chat, I develope
 </ul>
 <h2 style="text-align:justify;">Hardware</h2>
 <p style="text-align:justify;">Remember I said I knew nothing about Bluetooth? That's true to the extent that I wasn't sure whether I'd achieve what I wanted with Bluetooth Low Energy, or I needed to go with Bluetooth Classic. I also wanted to cut costs a little bit, so I decided to give it a try with <a class="" href="http://espressif.com/en/products/hardware/esp-wroom-32/overview" target="_blank" rel="noopener">ESP-WROOM-32 microcontroller</a> from Espressif Systems. It's a very powerful dual-core chip with WiFi, BLE, and Bluetooth Classic connectivity, and it measures a mere 18x25.5mm with integrated PCB antenna included.</p>
-<p>[caption id="attachment_454" align="aligncenter" width="1532"]<img class="aligncenter size-full wp-image-454" src="{{ site.baseurl }}/assets/esp-ali.png" alt="esp-ali.png" width="1532" height="842" /> Cutting costs pretty aggressively actually.[/caption]</p>
+<p>[caption id="attachment_454" align="aligncenter" width="1532"]<img class="aligncenter size-full wp-image-454" src="{{ site.baseurl }}/assets/esp-ali.png" alt="esp-ali.png"/> Cutting costs pretty aggressively actually.[/caption]</p>
 <p style="text-align:justify;">It has a 1.27mm raster which meant some serious SMD effort just to connect wires to it, so I ordered two chips in case I fail, and planned to solder it to the ESP-32-specific 2.54mm raster adapter.</p>
 <h2 style="text-align:justify;">Fun</h2>
 <p style="text-align:justify;">For the most crucial part of the device, the <a href="https://www.adafruit.com/product/1189" target="_blank" rel="noopener">Adafruit Massive Arcade Button</a> was the obvious ideal candidate. It features a 10cm diameter dome with an LED backlight, and since I saw it for the first time I was looking for a good enough excuse to finally get it.</p>
 <h1 style="text-align:justify;">Ready, set, go!</h1>
 <p style="text-align:justify;">One month later when the package from Singapore arrived, I was ready to get my hands dirty. It was a very wise decision to order two chips, as it didn't take long till I failed at putting the first one on the adapter. I didn't notice the slight misalignment in the left upper area and made several short circuits, and then unsoldering the chip using decent temperature was too much for my skills.</p>
-<p>[caption id="attachment_455" align="aligncenter" width="1024"]<img class=" size-large wp-image-455 aligncenter" src="{{ site.baseurl }}/assets/adapter-fail.jpg?w=2048" alt="adapter-fail" width="1024" height="1024" /> How to: waste your shiny new ESP-WROOM-32 by soldering it misaligned.[/caption]</p>
+<p>[caption id="attachment_455" align="aligncenter" width="1024"]<img class=" size-large wp-image-455 aligncenter" src="{{ site.baseurl }}/assets/adapter-fail.jpg?w=2048" alt="adapter-fail"/> How to: waste your shiny new ESP-WROOM-32 by soldering it misaligned.[/caption]</p>
 <p style="text-align:justify;">If that was not enough of a bad luck, I wasted the other chip in a similar way just a few moments later. (I thought) I soldered it properly this time (without obviously visible misalignments), but still, something went wrong, as I lost the connection to the chip soon after I powered it up.</p>
 <h2 style="text-align:justify;">Step back. Regroup.</h2>
 <p style="text-align:justify;">Having failed so miserably I resorted to getting a dedicated development board. I thought I'd do it the right way – start off with the dev board, and having figured out the working prototype, I'd replace it with a bare microcontroller and only the required circuitry. Luckily enough I got an <a href="http://esp-idf.readthedocs.io/en/latest/get-started/get-started-devkitc.html" target="_blank" rel="noopener">ESP-DevKitC</a> just before the Christmas break.</p>
@@ -71,7 +71,7 @@ excerpt: Accidentally inspired by my colleagues during a casual chat, I develope
 <li>1x resistor (to limit the LED current).</li>
 </ul>
 <p style="text-align:justify;">The LED (and the resistor) could be omitted but since it's already provided with the Adafruit dome button, let's make some use of it.</p>
-<p>[caption id="attachment_456" align="aligncenter" width="2560"]<img class=" size-full wp-image-456 aligncenter" src="{{ site.baseurl }}/assets/esp-devkitc.jpg" alt="esp-devkitc" width="2560" height="1920" /> Simple as that.[/caption]</p>
+<p>[caption id="attachment_456" align="aligncenter" width="2560"]<img class=" size-full wp-image-456 aligncenter" src="{{ site.baseurl }}/assets/esp-devkitc.jpg" alt="esp-devkitc"/> Simple as that.[/caption]</p>
 <h2 style="text-align:justify;">Working principle</h2>
 <p style="text-align:justify;">I imagined the big picture the following way:</p>
 <ul style="text-align:justify;">
@@ -95,7 +95,7 @@ excerpt: Accidentally inspired by my colleagues during a casual chat, I develope
 </ul>
 <h3 style="text-align:justify;">Client (the computer)</h3>
 <p style="text-align:justify;">The Client searches for peripherals with mentioned services. Once found and connected, it sets the <em>idle</em> characteristic to <code>true</code> and requests notifications for the <em>trigger </em>characteristic. In the UI it allows for defining a command (or set of commands) to be passed to the Terminal.app for execution.</p>
-<p>[caption id="attachment_460" align="aligncenter" width="398"]<img class="aligncenter  wp-image-460" src="{{ site.baseurl }}/assets/buildbutton-osx1.png?w=600" alt="buildbutton-osx" width="398" height="316" /> So much for the UI.[/caption]</p>
+<p>[caption id="attachment_460" align="aligncenter" width="398"]<img class="aligncenter  wp-image-460" src="{{ site.baseurl }}/assets/buildbutton-osx1.png?w=600" alt="buildbutton-osx"/> So much for the UI.[/caption]</p>
 <p style="text-align:justify;">Now for the tricky part: <strong>figuring out when the command finished</strong>. Since the app passes control to the external application (Terminal.app), to know when Terminal.app is done running a command, it needs to handle some kind of inter-process communication. Which is not a big deal, at least compared to <em>how to tell the other app to notify my app back</em>.</p>
 <h3 style="text-align:justify;">Inter-process communication in MacOS X</h3>
 <p style="text-align:justify;">Well, in case of Terminal.app, it runs a system shell so we can easily inject some command into the shell to do a callback for the BuildButton.app. As it comes to the IPC itself, there are several solutions for OS X ranging from a shared file on disk to using Mach ports. I ended up somewhere in between by using the oldie but goodie <strong>Apple Script</strong>. With its funny, naïve syntax and the ability to expose virtually any behaviour to the app's scripting interface I believed it was the right tool for the job here.</p>
@@ -128,7 +128,7 @@ let argument = { () -&gt; String in<br />
 [/code]</p>
 <p style="text-align:justify;">It tells the app to use <code>FinishCommand</code>, which is a subclass of <code>NSScriptCommand</code> and does the actual job of updating the <em>idle</em> characteristic of the button.</p>
 <h1 style="text-align:justify;">The dedicated button circuit</h1>
-<p style="text-align:justify;"><img class="alignright size-medium wp-image-471" src="{{ site.baseurl }}/assets/dome.gif?w=338" alt="dome" width="169" height="300" />Since the dev board prototype turned out working fine, I could finally order THE BUTTON, and design a PCB for the circuit. I also decided to give it a last shot with soldering the bare ESP-32 chip to the adapter and I finally got it right :D</p>
+<p style="text-align:justify;"><img class="alignright size-medium wp-image-471" src="{{ site.baseurl }}/assets/dome.gif?w=338" alt="dome"/>Since the dev board prototype turned out working fine, I could finally order THE BUTTON, and design a PCB for the circuit. I also decided to give it a last shot with soldering the bare ESP-32 chip to the adapter and I finally got it right :D</p>
 <p style="text-align:justify;">The first version of a circuit contains the following components:</p>
 <ul style="text-align:justify;">
 <li>3xAAA battery power supply (4.5V),</li>
@@ -140,11 +140,11 @@ let argument = { () -&gt; String in<br />
 <li>programming interface (UART + VCC/GND).</li>
 </ul>
 <p style="text-align:justify;">This is the schematic:</p>
-<p style="text-align:justify;"><img class="alignnone size-full wp-image-465" src="{{ site.baseurl }}/assets/sch1.png" alt="sch.png" width="1598" height="1500" /></p>
+<p style="text-align:justify;"><img class="alignnone size-full wp-image-465" src="{{ site.baseurl }}/assets/sch1.png" alt="sch.png"/></p>
 <p style="text-align:justify;">I copied over some part of it (like EN/IO0 and power supply capacitors) directly from the schematic of ESP-DevKitC which is available <a href="https://dl.espressif.com/dl/schematics/ESP32-Core-Board-V2_sch.pdf" target="_blank" rel="noopener">online</a>. If you take a closer look at my schematic, you'll notice that it's highly unoptimized, e.g. it includes two DC voltage regulator circuits: a step-up 9V for the LED and a step-up/step-down 3.3V for the chip. Firstly, it's a pretty expensive solution, and also the 9V regulator drains about 1mA of constant current when idle, with significant impact on battery life.</p>
 <h2 style="text-align:justify;">Power supply issues</h2>
 <p style="text-align:justify;">I did some initial bare board testing with the circuit similar to this:</p>
-<p style="text-align:justify;"><img class=" size-large wp-image-467 aligncenter" src="{{ site.baseurl }}/assets/protoboard.jpg?w=2048" alt="protoboard" width="1024" height="1024" /></p>
+<p style="text-align:justify;"><img class=" size-large wp-image-467 aligncenter" src="{{ site.baseurl }}/assets/protoboard.jpg?w=2048" alt="protoboard"/></p>
 <p style="text-align:justify;">And I couldn't get it to work because the chip was constantly restarting right after booting up. The console output showed the following message:</p>
 <p>[code]<br />
 Brownout detector was triggered<br />
@@ -160,7 +160,7 @@ Brownout detector was triggered<br />
 <p>[*] - you usually risk the undefined behaviour in places where the logic level cannot be determined due to the voltage being too low for a logic one, yet too high for a logic zero</p>
 <h2 style="text-align:justify;">Printed board design</h2>
 <p style="text-align:justify;">For the PCB, I wanted it to be some kind of a "hat" on top of the ESP adapter board:</p>
-<p>[caption id="attachment_466" align="alignnone" width="1024"]<img class="alignnone size-large wp-image-466" src="{{ site.baseurl }}/assets/screen-shot-2018-01-15-at-22-17-48.png?w=2048" alt="Screen Shot 2018-01-15 at 22.17.48" width="1024" height="971" /> Quite a tight fit for a hand-made PCB, if you ask me.[/caption]</p>
+<p>[caption id="attachment_466" align="alignnone" width="1024"]<img class="alignnone size-large wp-image-466" src="{{ site.baseurl }}/assets/screen-shot-2018-01-15-at-22-17-48.png?w=2048" alt="Screen Shot 2018-01-15 at 22.17.48"/> Quite a tight fit for a hand-made PCB, if you ask me.[/caption]</p>
 <p style="text-align:justify;">Even though the dome button itself is huge and it needs an even bigger case, I went with a reasonably small form factor, and the final board looked like this:</p>
 <p>[gallery ids="470,468,469" type="rectangular" link="file"]</p>
 <p style="text-align:justify;">With help of some velcro and a glue gun I managed to put everything in a box:</p>

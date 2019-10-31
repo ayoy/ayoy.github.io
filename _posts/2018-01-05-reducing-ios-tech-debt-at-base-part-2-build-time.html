@@ -46,7 +46,7 @@ excerpt: If I told you Base iOS client takes around 3.5 minutes for a clean buil
 <p style="text-align:justify;">To start with, let's display total build duration in Xcode. Typing the following in terminal:</p>
 <pre>$ defaults write com.apple.dt.Xcode ShowBuildOperationDuration YES</pre>
 <p style="text-align:justify;">and restarting Xcode will get you the build time in Xcode's toolbar after every build. Just like this:</p>
-<p style="text-align:justify;"><img class="alignnone size-full wp-image-312" src="{{ site.baseurl }}/assets/toolbar-buildtime.png" alt="toolbar-buildtime" width="984" height="75" /></p>
+<p style="text-align:justify;"><img class="alignnone size-full wp-image-312" src="{{ site.baseurl }}/assets/toolbar-buildtime.png" alt="toolbar-buildtime"/></p>
 <p style="text-align:justify;">Apparently, it's an undocumented and unofficial feature that is subject to stop working with any future Xcode release, but so far it's been serving developers since at least Xcode 5 (according to <a href="https://stackoverflow.com/a/2801156/969818" target="_blank" rel="noopener">this discussion on SO</a>). The downside is that duration retrieved this way can't be logged to a file or exposed in an environment variable, but it's perfect for controlling the build time as you work on improving it.</p>
 <h1 style="text-align:justify;">Improving build time</h1>
 <p style="text-align:justify;">Having set the benchmark, you can go through the list of things that can be applied to every project in the pursuit of faster build times.</p>
@@ -60,20 +60,20 @@ excerpt: If I told you Base iOS client takes around 3.5 minutes for a clean buil
 <p style="text-align:justify;">If you suspect that your Swift code takes too long to compile you can verify it by adding the following Swift compiler frontend flag to <strong>Other Swift Flags</strong> section in build settings:</p>
 <p style="text-align:justify;"><code>-Xfrontend -debug-time-function-bodies</code></p>
 <p style="text-align:justify;">It causes the compiler to output to the build log the time taken to compile each Swift function, just like that:</p>
-<p style="text-align:justify;"><img class=" size-full wp-image-315 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-15-29-32.png" alt="Screen Shot 2018-01-01 at 15.29.32" width="1160" height="628" /></p>
+<p style="text-align:justify;"><img class=" size-full wp-image-315 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-15-29-32.png" alt="Screen Shot 2018-01-01 at 15.29.32"/></p>
 <p style="text-align:justify;">But you don't really have to go through the build log to investigate compile times one by one. Here comes the other useful frontend flag:</p>
 <p style="text-align:justify;"><code>-Xfrontend -warn-long-function-bodies=150</code></p>
-<p style="text-align:justify;"><img class="alignright size-medium wp-image-316" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-15-47-13.png?w=600" alt="Screen Shot 2018-01-01 at 15.47.13" width="300" height="120" /></p>
+<p style="text-align:justify;"><img class="alignright size-medium wp-image-316" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-15-47-13.png?w=600" alt="Screen Shot 2018-01-01 at 15.47.13"/></p>
 <p style="text-align:justify;">Setting this flag will generate a build warning for every method that takes more than 150ms to type check. The time limit is obviously just an arbitrary value and you can fine tune it to suit your needs.</p>
 <p style="text-align:justify;">Finally, there's a <a href="https://github.com/RobertGummesson/BuildTimeAnalyzer-for-Xcode" target="_blank" rel="noopener">handy app by Robert Gummesson</a> that extracts compile times from the build log and displays them in a searchable table view:</p>
-<p style="text-align:justify;"><img class="alignnone size-full wp-image-317" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-15-45-48.png" alt="Screen Shot 2018-01-01 at 15.45.48" width="1822" height="1026" /></p>
+<p style="text-align:justify;"><img class="alignnone size-full wp-image-317" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-15-45-48.png" alt="Screen Shot 2018-01-01 at 15.45.48"/></p>
 <p style="text-align:justify;">Be sure to check it out and read his two blog posts mentioned in the Readme file for more info on compile time problems he was able to debug and fix.</p>
 <p style="text-align:justify;">My personal feeling though is that Swift compiler has greatly improved between Swift 2 and Swift 3 and the weirdly long compilation times should be gone now. At least we haven't really experienced unusual slowness in our Swift 4 codebase.</p>
 <h2 style="text-align:justify;">Experiments with optimization</h2>
 <p style="text-align:justify;">The <strong>whole module optimization</strong> provided by Swift compiler is a perfect way to reduce the binary size and speed up execution time for release builds. It can also greatly improve compile time, which is not clearly stated in the <a href="https://swift.org/blog/whole-module-optimizations/" target="_blank" rel="noopener">WMO blog entry at swift.org</a>.</p>
 <p style="text-align:justify;">It is, however, a release build feature and enabling it for debug builds would make debugging virtually impossible. Unless you do it like <a href="https://cookpad.com" target="_blank" rel="noopener">Cookpad</a> does.</p>
 <p style="text-align:justify;"><a href="https://twitter.com/@yuseinishiyama" target="_blank" rel="noopener">Yusei Nishiyama</a> from Cookpad gave a very inspiring talk at <a href="http://2017.mobilization.pl" target="_blank" rel="noopener">Mobilization 2017</a> on how they handle development of an iOS app with 100 million monthly active users. He talked about enabling whole module optimization for debug builds to speed up compilation.</p>
-<p style="text-align:justify;"><img class=" size-full wp-image-319 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-17-43-26.png" alt="Screen Shot 2018-01-01 at 17.43.26" width="1562" height="753" /></p>
+<p style="text-align:justify;"><img class=" size-full wp-image-319 aligncenter" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-17-43-26.png" alt="Screen Shot 2018-01-01 at 17.43.26"/></p>
 <p style="text-align:justify;">First, you need to enable WMO in <strong>Swift Compiler's</strong> <strong>Optimization Level</strong> build settings (which effectively appends <code>-whole-module-optimization</code> flag), and then disable optimizations using <code>-Onone</code> in <strong>Other Swift Flags </strong>(which doesn't seem to be affecting the WMO flag). Simple as that.</p>
 <p style="text-align:justify;">Here are build times for a clean build of Base app with different optimization levels:</p>
 <pre>None [-Onone]: 184s
@@ -84,7 +84,7 @@ Fast, Whole Module Optimization [-O -whole-module-optimization]: 123s</pre>
 <p style="text-align:justify;">This is not the simplest task ever, especially if you don't apply it from the start of the project. Still, it's a great idea to extract files that:</p>
 <ul style="text-align:justify;">
 <li>
-<p>[caption id="attachment_329" align="alignright" width="300"]<img class=" size-medium wp-image-329 alignright" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-20-17-09.png?w=600" alt="Screen Shot 2018-01-01 at 20.17.09" width="300" height="146" /> Creating a new Swift module, step 1.[/caption]</p>
+<p>[caption id="attachment_329" align="alignright" width="300"]<img class=" size-medium wp-image-329 alignright" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-20-17-09.png?w=600" alt="Screen Shot 2018-01-01 at 20.17.09"/> Creating a new Swift module, step 1.[/caption]</p>
 <p>have no dependencies on Obj-C code,</li>
 <li>have no dependencies on other Swift files, or all their dependencies are extracted together with them,</li>
 </ul>
@@ -96,7 +96,7 @@ Fast, Whole Module Optimization [-O -whole-module-optimization]: 123s</pre>
 <li>open sourcing – once you've prepared a small, self-contained Swift module, you might want to contribute it to the Open Source community,</li>
 <li>incremental build time improvement – while the clean build time would remain pretty much unchanged (with a sane number of modules at least), every incremental build won't touch already compiled modules unless their source has changed. This means fewer files to recompile with every change to the code, and eventually, faster build time.</li>
 </ul>
-<p style="text-align:justify;"><img class="  wp-image-331 alignright" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-20-50-361-e1514838440873.png" alt="Screen Shot 2018-01-01 at 20.50.36" width="221" height="231" /></p>
+<p style="text-align:justify;"><img class="  wp-image-331 alignright" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-20-50-361-e1514838440873.png" alt="Screen Shot 2018-01-01 at 20.50.36"/></p>
 <p style="text-align:justify;">We created two modules within Base, and I believe the same could be a valid choice for most projects (if you don't have a better idea):</p>
 <ol>
 <li style="text-align:justify;">BaseUIKit – containing all the common UI extensions plus simple UI classes like custom cells and UI controls,</li>
@@ -105,7 +105,7 @@ Fast, Whole Module Optimization [-O -whole-module-optimization]: 123s</pre>
 <p style="text-align:justify;">For a proof of concept, modules are 10-20 classes each and around 3500 lines of code in total, but we'll be adding new code there or migrating old code from the main module as time permits. The whole module optimization can (and should!) obviously be enabled on them like I described above.</p>
 <h1>Outcome</h1>
 <p>Going through all the ideas I described and taking appropriate actions, we were able to reduce the clean debug build time by nearly 50% (while adding some new code since October, as I'm writing this in January and testing with Base v3.5.0).</p>
-<p><img class="alignnone size-full wp-image-334" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-22-06-20.png" alt="Screen Shot 2018-01-01 at 22.06.20" width="981" height="71" /></p>
+<p><img class="alignnone size-full wp-image-334" src="{{ site.baseurl }}/assets/screen-shot-2018-01-01-at-22-06-20.png" alt="Screen Shot 2018-01-01 at 22.06.20"/></p>
 <p>The Jenkins build duration went down from over 12 minutes to below 8 minutes. More insights on that, plus how we're using fastlane to automate various tasks are coming up in the last part of the series. Subscribe to the blog if you like, and you won't miss it :) thanks!</p>
 
 <div id="disqus_thread"></div>

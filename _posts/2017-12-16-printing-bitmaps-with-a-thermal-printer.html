@@ -61,7 +61,7 @@ printer.printBitmapFromFile(135, 135, '/flash/lib/qrcode')</p>
 <p>[/code]</p>
 <p style="text-align:justify;">It would open the file, read it in one-line chunks and send the data to printer. This way only a small part of data would be kept in memory at once, effectively allowing for processing the whole bitmap.</p>
 <p style="text-align:justify;">In fact, this time I didn't get a memory allocation problem, but this is how the bitmap was printed:</p>
-<p>[caption id="attachment_278" align="aligncenter" width="446"]<img class="  wp-image-278 aligncenter" src="{{ site.baseurl }}/assets/img_31691.jpg" alt="IMG_3169.JPG" width="446" height="446" /> The QR code as seen by thermal printer – 2017, colorized.[/caption]</p>
+<p>[caption id="attachment_278" align="aligncenter" width="446"]<img class="  wp-image-278 aligncenter" src="{{ site.baseurl }}/assets/img_31691.jpg" alt="IMG_3169.JPG"/> The QR code as seen by thermal printer – 2017, colorized.[/caption]</p>
 <p style="text-align:justify;">Still suspecting some memory issue, I tried reading only part of the file, limiting the number of lines passed as a second argument to <code>printBitmapFromFile()</code>:</p>
 <p>[code language="python"]<br />
 printer.printBitmapFromFile(135, 35, '/flash/lib/qrcode')<br />
@@ -71,11 +71,11 @@ printer.printBitmapFromFile(135, 105, '/flash/lib/qrcode')<br />
 printer.printBitmapFromFile(135, 120, '/flash/lib/qrcode')<br />
 printer.printBitmapFromFile(135, 128, '/flash/lib/qrcode')<br />
 [/code]</p>
-<p style="text-align:justify;"><img class="  wp-image-279 alignleft" src="{{ site.baseurl }}/assets/img_3171.jpg" alt="IMG_3171" width="287" height="383" /></p>
+<p style="text-align:justify;"><img class="  wp-image-279 alignleft" src="{{ site.baseurl }}/assets/img_3171.jpg" alt="IMG_3171"/></p>
 <p style="text-align:justify;">Apparently, the printer was able to handle smaller bitmaps but failed once the total size exceeded ~120 lines, 17 bytes each – which is 2040 bytes, and it may be meaningful or just a coincidence. I yet have to figure out whether 2kB is the real maximum limit of bitmap chunk size that the printer accepts.</p>
 <p style="text-align:justify;">The <code>printBitmap()</code> (and my file-based variation of it) has the optional <code>LaaT</code> argument - it stands for <em>line-at-a-time</em> and means sending a separate print command for every single line of the bitmap, instead of one command for the whole image. Enabling this flag fixed the printout for me, however using it slows the printing down, so it's not an optimal solution.</p>
 <p style="text-align:justify;">I ended up setting a maximum single chunk of a bitmap to 50 lines, i.e. the 135px high bitmap would be printed in 3 chunks. This is obviously transparent to the user and not visible on the printout. The value of 50 lines is arbitrary, it works for me so far, but given the 2kB hypothesis is right, it would fail for a full-page-width bitmap (384 dots which is 48 bytes, and times 50 it makes 2400 bytes). I'm going to verify it later on.</p>
-<p>[caption id="attachment_280" align="aligncenter" width="458"]<img class="alignnone  wp-image-280" src="{{ site.baseurl }}/assets/img_3153-e1513442570290.jpg" alt="IMG_3153" width="458" height="458" /> At last![/caption]</p>
+<p>[caption id="attachment_280" align="aligncenter" width="458"]<img class="alignnone  wp-image-280" src="{{ site.baseurl }}/assets/img_3153-e1513442570290.jpg" alt="IMG_3153"/> At last![/caption]</p>
 <h1 style="text-align:justify;">Next steps</h1>
 <p style="text-align:justify;">Having sorted out the basic issues around printing bitmaps, I have the following on my to-do list:</p>
 <ul style="text-align:justify;">

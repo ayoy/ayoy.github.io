@@ -169,11 +169,11 @@ Note on <code>-j9</code>: it is used to speed up building by parallelizing the c
 <li>frozen bytes data: N/A (loaded with firmware), <strong>16ms to import </strong></li>
 </ul>
 <p style="text-align:justify;">Also, with a simple test program that draws a couple of shapes, prints a few strings and displays an image, the total available RAM remaining after the program has finished is around 2.4MB (with 2.55MB available at startup after loading firmware), when before optimizations it was at around 1.8MB.</p>
-<p><img class=" size-full wp-image-575 aligncenter" src="{{ site.baseurl }}/assets/img_8450.jpg" alt="IMG_8450.JPG" width="4032" height="3024" /></p>
+<p><img class=" size-full wp-image-575 aligncenter" src="{{ site.baseurl }}/assets/img_8450.jpg" alt="IMG_8450.JPG"/></p>
 <h1>Library features</h1>
 <p style="text-align:justify;">In the current state, the library supports only the 1.54 inch two-colour black and red Waveshare display, but adding support for other EPDs should be a simple task. I'll maybe get some other unit to give it a try.</p>
 <p style="text-align:justify;">Apart from printing text, you can also draw lines (between any two points, i.e. not limited to horizontal and vertical) or rectangles and circles (both regular and filled).</p>
-<p>[caption id="attachment_582" align="alignright" width="269"]<img class="alignnone size-full wp-image-582" src="{{ site.baseurl }}/assets/epd-goinvent.gif" alt="epd-goinvent" width="269" height="212" /> #GOINVENT![/caption]</p>
+<p>[caption id="attachment_582" align="alignright" width="269"]<img class="alignnone size-full wp-image-582" src="{{ site.baseurl }}/assets/epd-goinvent.gif" alt="epd-goinvent"/> #GOINVENT![/caption]</p>
 <p style="text-align:justify;">Drawing images is available via filling the frame buffer with raw image bytes (which is the fastest possible way, especially if you freeze the image data in firmware). It's not a very straightforward or flexible method though, as you have to convert your image to bytes beforehand. So I added support for loading a Windows-style 1-color BMP file directly. You can even display the bitmap at given coordinates, if it's smaller than the screen size – this should be helpful when combining images with text.</p>
 <p style="text-align:justify;">The library is available from <a href="https://github.com/ayoy/micropython-waveshare-epd" target="_blank" rel="noopener">GitHub</a>, and should you need the C/C++ version for plain ESP32, I also did it and it's in a <a href="https://github.com/ayoy/esp32-waveshare-epd" target="_blank" rel="noopener">separate repository</a> (although without the BMP file support). Let me know if you find any of it helpful and of course, contributions are welcome!</p>
 <p>&nbsp;</p>
