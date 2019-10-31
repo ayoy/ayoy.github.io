@@ -82,11 +82,10 @@ excerpt: Base iOS client version 3.5.2 is a build number 2259. Base 2.3 from Jan
 <p style="text-align:justify;">There are significantly fewer steps to complete in order to create a beta build for HockeyApp – and these are a subset of the AppStore <em>lane</em>, so with minimal modifications, we got that case covered too. And even though we used to have a custom-made script for preparing beta builds, being able to replace it with fastlane was very relieving, as it's one thing less to care about.</p>
 <h1 style="text-align:justify;">Automated unit testing on CI</h1>
 <p style="text-align:justify;">The elementary task for continuous integration is building the app and running unit tests. With fastlane, it's as easy as calling its <code>scan</code> action, e.g. like this:</p>
-<p>[code language="Ruby"]<br />
-lane :unit_tests do<br />
-    scan(scheme: &quot;Example&quot;)<br />
-end<br />
-[/code]</p>
+<p><pre><code class="Ruby">lane :unit_tests do
+    scan(scheme: &quot;Example&quot;)
+end
+</code></pre></p>
 <p style="text-align:justify;">It cleans the project, builds the app for testing and runs tests suite. It's widely configurable, so if you're new to fastlane, take a look at <a href="https://docs.fastlane.tools/actions/scan/#automating-the-whole-process" target="_blank" rel="noopener">the documentation</a> for detailed info on <code>scan</code>. For our case, provided that we prepend it with submodule update and pods install, we'd be good to go, only having to direct Jenkins to fastlane's output files.</p>
 <h2 style="text-align:justify;">Tracking build duration and warning count</h2>
 <p style="text-align:justify;">We were setting up fastlane for Jenkins just at the time of our <a href="http://kapusta.cc/2018/01/02/tech-debt-at-base-warnings/" target="_blank" rel="noopener">warnings crusade</a>, so we wanted to keep clear visibility into what's the current warning count and whether pull requests introduce any new warnings. We also gave it a shot with measuring CI build time – although completely unrelated to the local build time (our iOS CI runs on Mac minis that are OH SO SLOW), and prone to significant variations (dependent on the current load of the given Jenkins slave), it could still give some value to us.</p>
@@ -97,40 +96,36 @@ end<br />
 <li>clean the project using <code>xcodebuild</code></li>
 <li>record current timestamp:</li>
 </ol>
-<p>[code language="Ruby"]<br />
-build_duration = Time.now<br />
-[/code]</p>
+<p><pre><code class="Ruby">build_duration = Time.now
+</code></pre></p>
 <ol style="text-align:justify;" start="5">
 <li>build the project for testing using <code>xcodebuild</code></li>
 <li>store build duration using the recorded timestamp:</li>
 </ol>
-<p>[code language="Ruby"]<br />
-build_duration = Time.now - build_duration<br />
-[/code]</p>
+<p><pre><code class="Ruby">build_duration = Time.now - build_duration
+</code></pre></p>
 <ol style="text-align:justify;" start="7">
 <li>extract warning count from the log file:</li>
 </ol>
-<p>[code language="Ruby"]<br />
-warning_count = File.foreach(build_output_path)<br />
-                  .grep(/: warning:/).uniq.count<br />
-[/code]</p>
+<p><pre><code class="Ruby">warning_count = File.foreach(build_output_path)
+                  .grep(/: warning:/).uniq.count
+</code></pre></p>
 <ol style="text-align:justify;" start="8">
 <li>extract build number and version from <code>Info.plist</code> file</li>
 <li>submit data to InfluxDB:</li>
 </ol>
-<p>[code language="Ruby"]<br />
-influx(<br />
-    tags: {<br />
-        branch: git_branch,<br />
-        build_number: current_build_number,<br />
-        version: current_version_name<br />
-    },<br />
-    values: {<br />
-        build_duration: build_duration,<br />
-        warning_count: warning_count<br />
-    }<br />
-)<br />
-[/code]</p>
+<p><pre><code class="Ruby">influx(
+    tags: {
+        branch: git_branch,
+        build_number: current_build_number,
+        version: current_version_name
+    },
+    values: {
+        build_duration: build_duration,
+        warning_count: warning_count
+    }
+)
+</code></pre></p>
 <p style="text-align:justify;"><em>Influx tags can be used later on to filter presented values.</em></p>
 <ol style="text-align:justify;" start="10">
 <li>eventually<strong>, run tests :)</strong> using <code>scan</code></li>

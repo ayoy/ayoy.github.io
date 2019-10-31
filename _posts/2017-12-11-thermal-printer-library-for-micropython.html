@@ -88,14 +88,14 @@ excerpt: I recently got a thermal printer and adapted its Python library to Micr
 <p style="text-align:justify;">And that's how I eventually got it right. The underscored indent before "Large" that is visible in the photo below got fixed in the meantime too.</p>
 <p style="text-align:justify;"><img class="  wp-image-257 aligncenter" src="{{ site.baseurl }}/assets/img_31131.jpg" alt="IMG_3113"/></p>
 <p style="text-align:justify;">Just so you know, printing with the lib is <strong>dead simple</strong>. For regular text it boils down to just calling <code>println()</code>:</p>
-<p>[code language="python"]</p>
-<p>from Adafruit_Thermal import *<br />
-from machine import Pin</p>
-<p>printer = Adafruit_Thermal(pins=(Pin.exp_board.G14,<br />
-                                 Pin.exp_board.G15))<br />
-printer.println(&quot;You just print line by line&quot;)<br />
-printer.println(&quot;using 'println()'&quot;)<br />
-[/code]</p>
+<p><pre><code language="python">from Adafruit_Thermal import *
+from machine import Pin
+
+printer = Adafruit_Thermal(pins=(Pin.exp_board.G14,
+                                 Pin.exp_board.G15))
+printer.println(&quot;You just print line by line&quot;)
+printer.println(&quot;using 'println()'&quot;)
+</code></pre></p>
 <p>Text decorations like changing size, alignment, font weight or line spacing are all single-line commands too. There's an <a href="https://github.com/ayoy/micropython-thermal-printer/blob/master/printertest.py" target="_blank" rel="noopener">example code</a> in the repository printing the text shown in the photos.</p>
 <h1 style="text-align:justify;">Remaining work</h1>
 <p style="text-align:justify;">I still have to make printing bitmaps work, as my LoPy couldn't manage to do that due to memory allocation problem. It might be a device limitation (it's got 512kB of RAM but I guess some of it is already taken by MicroPython runtime) or a bug in the code, or the combination of those two. I'll give it another try in the next couple of days, maybe I could make a proper use of garbage collector... I'm still learning Python so I could as well be talking bullsh** – I'd appreciate any kind of help or guidance if that hurts your eyes.</p>

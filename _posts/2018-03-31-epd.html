@@ -48,70 +48,66 @@ excerpt: This time porting Python code to MicroPython wasn't only about fixing s
 <p style="text-align:justify;">The Python library for Raspberry Pi uses PIL (Python Imaging Library) for displaying text and images. It's awesome because it greatly simplifies the implementation. PIL is however not available in MicroPython, so I had to resort to drawing text using fonts defined in the code as arrays.</p>
 <h2>Optimizations</h2>
 <p>Here's the example definition of a letter 'A' in a 24-pixel font:</p>
-<p>[code language='Bash']<br />
-# @2376 'A' (17 pixels wide)<br />
-0x00, 0x00, 0x00, #<br />
-0x00, 0x00, 0x00, #<br />
-0x00, 0x00, 0x00, #<br />
-0x1F, 0x80, 0x00, #    ######<br />
-0x1F, 0xC0, 0x00, #    #######<br />
-0x01, 0xC0, 0x00, #        ###<br />
-0x03, 0x60, 0x00, #       ## ##<br />
-0x03, 0x60, 0x00, #       ## ##<br />
-0x06, 0x30, 0x00, #      ##   ##<br />
-0x06, 0x30, 0x00, #      ##   ##<br />
-0x0C, 0x30, 0x00, #     ##    ##<br />
-0x0F, 0xF8, 0x00, #     #########<br />
-0x1F, 0xF8, 0x00, #    ##########<br />
-0x18, 0x0C, 0x00, #    ##       ##<br />
-0x30, 0x0C, 0x00, #   ##        ##<br />
-0xFC, 0x7F, 0x00, # ######   #######<br />
-0xFC, 0x7F, 0x00, # ######   #######<br />
-0x00, 0x00, 0x00, #<br />
-0x00, 0x00, 0x00, #<br />
-0x00, 0x00, 0x00, #<br />
-0x00, 0x00, 0x00, #<br />
-0x00, 0x00, 0x00, #<br />
-0x00, 0x00, 0x00, #<br />
-0x00, 0x00, 0x00, #<br />
-[/code]</p>
+<p><pre><code class='Bash'># @2376 'A' (17 pixels wide)
+0x00, 0x00, 0x00, #
+0x00, 0x00, 0x00, #
+0x00, 0x00, 0x00, #
+0x1F, 0x80, 0x00, #    ######
+0x1F, 0xC0, 0x00, #    #######
+0x01, 0xC0, 0x00, #        ###
+0x03, 0x60, 0x00, #       ## ##
+0x03, 0x60, 0x00, #       ## ##
+0x06, 0x30, 0x00, #      ##   ##
+0x06, 0x30, 0x00, #      ##   ##
+0x0C, 0x30, 0x00, #     ##    ##
+0x0F, 0xF8, 0x00, #     #########
+0x1F, 0xF8, 0x00, #    ##########
+0x18, 0x0C, 0x00, #    ##       ##
+0x30, 0x0C, 0x00, #   ##        ##
+0xFC, 0x7F, 0x00, # ######   #######
+0xFC, 0x7F, 0x00, # ######   #######
+0x00, 0x00, 0x00, #
+0x00, 0x00, 0x00, #
+0x00, 0x00, 0x00, #
+0x00, 0x00, 0x00, #
+0x00, 0x00, 0x00, #
+0x00, 0x00, 0x00, #
+0x00, 0x00, 0x00, #
+</code></pre></p>
 <p style="text-align:justify;">Full font definition is available <a href="https://github.com/ayoy/micropython-waveshare-epd/blob/11c31c601ef144228fbfd969bb65a300a3aa3030/fonts/font24.py" target="_blank" rel="noopener">here</a>. 3x24 = 72 bytes are required for a single character. Now multiply it by the number of printable ASCII characters (95, in the 32-127 range) and you'll get 6840 items in the list. Even for the small 8-pixel font the list has 760 elements.</p>
 <p style="text-align:justify;">Similarly for images, to display an image you'll need a full-screen bitmap, which in case of my small 200x200px display is a list with 200x200/8 = 5000 bytes.</p>
 <p style="text-align:justify;">This brings up performance problems on all possible fronts: loading a font module is terribly slow and it generates huge memory overhead. Have a look:</p>
-<p>[code language="Python"]</p>
-<p>&gt;&gt;&gt; from machine import Timer<br />
-&gt;&gt;&gt; import time<br />
-&gt;&gt;&gt; import gc<br />
-&gt;&gt;&gt;<br />
-&gt;&gt;&gt; chrono = Timer.Chrono()<br />
-&gt;&gt;&gt; mem_free = gc.mem_free()<br />
-&gt;&gt;&gt; chrono.start() # start a timer<br />
-&gt;&gt;&gt; import font24<br />
-&gt;&gt;&gt; chrono.stop() # stop a timer after a module has loaded<br />
-&gt;&gt;&gt; print(mem_free - gc.mem_free())<br />
-36656<br />
-&gt;&gt;&gt; print(chrono.read()*1000)<br />
-1666.031</p>
-<p>[/code]</p>
+<p><pre><code class="Python">&gt;&gt;&gt; from machine import Timer
+&gt;&gt;&gt; import time
+&gt;&gt;&gt; import gc
+&gt;&gt;&gt;
+&gt;&gt;&gt; chrono = Timer.Chrono()
+&gt;&gt;&gt; mem_free = gc.mem_free()
+&gt;&gt;&gt; chrono.start() # start a timer
+&gt;&gt;&gt; import font24
+&gt;&gt;&gt; chrono.stop() # stop a timer after a module has loaded
+&gt;&gt;&gt; print(mem_free - gc.mem_free())
+36656
+&gt;&gt;&gt; print(chrono.read()*1000)
+1666.031
+</code></pre></p>
 <p style="text-align:justify;">Over 30kB of RAM and over 1.5s to load a module 😱. But we're far from the optimal solution here. For starters, let's replace the list with bytes - <code>struct</code> can be used for that:</p>
-<p>[code language="Python"]<br />
-&gt;&gt;&gt; import ustruct as struct<br />
-&gt;&gt;&gt; import font24<br />
-&gt;&gt;&gt; data = struct.pack("%sB" % len(font24.data), *(font24.data))<br />
-[/code]</p>
+<p><pre><code class="Python">&gt;&gt;&gt; import ustruct as struct
+&gt;&gt;&gt; import font24
+&gt;&gt;&gt; data = struct.pack("%sB" % len(font24.data), *(font24.data))
+</code></pre></p>
 <p style="text-align:justify;">Now <code>data</code> is a <code>bytes</code> object with contents of <code>font24.data</code>. Furthermore, <code>bytes</code> is an immutable data structure, which is exactly what we need for font files, and it can allow MicroPython interpreter to optimize it better.</p>
 <p style="text-align:justify;">The optimized font file looks like <a href="https://github.com/ayoy/micropython-waveshare-epd/blob/master/fonts/font24.py" target="_blank" rel="noopener">this</a>. Well, you won't easily consult the individual letters anymore, but that's the price for it being FAST. Here's how fast:</p>
-<p>[code language="Python"]<br />
-&gt;&gt;&gt; chrono = Timer.Chrono()<br />
-&gt;&gt;&gt; mem_free = gc.mem_free()<br />
-&gt;&gt;&gt; chrono.start() # start a timer<br />
-&gt;&gt;&gt; import font24<br />
-&gt;&gt;&gt; chrono.stop() # stop a timer after a module has loaded<br />
-&gt;&gt;&gt; print(mem_free - gc.mem_free())<br />
-14240<br />
-&gt;&gt;&gt; print(chrono.read()*1000)<br />
-377.0546<br />
-[/code]</p>
+<p><pre><code class="Python">&gt;&gt;&gt; chrono = Timer.Chrono()
+&gt;&gt;&gt; mem_free = gc.mem_free()
+&gt;&gt;&gt; chrono.start() # start a timer
+&gt;&gt;&gt; import font24
+&gt;&gt;&gt; chrono.stop() # stop a timer after a module has loaded
+&gt;&gt;&gt; print(mem_free - gc.mem_free())
+14240
+&gt;&gt;&gt; print(chrono.read()*1000)
+377.0546
+</code></pre></p>
 <p style="text-align:justify;">More than 4 times faster to load, with roughly a third of an original memory footprint. 💥🚀😎</p>
 <p>If this wasn't enough, we can go further.</p>
 <h3>Frozen modules</h3>
@@ -120,47 +116,44 @@ excerpt: This time porting Python code to MicroPython wasn't only about fixing s
 <li style="text-align:justify;">Get the Pycom MicroPython source code from GitHub:<br />
 <a href="https://github.com/pycom/pycom-micropython-sigfox" target="_blank" rel="noopener">https://github.com/pycom/pycom-micropython-sigfox</a></li>
 <li style="text-align:justify;"><strong>Recommended: </strong>check out the most recent tag, so that you build the release image, and not the current live image from git:<br />
-[code language="Bash"]<br />
-$ git tag # list available tags<br />
-1.11.0.b1<br />
-1.12.0.b1<br />
-1.13.0.b1<br />
-1.6.13.b1<br />
-v1.14.0.b1<br />
-v1.15.0.b1<br />
-v1.16.0.b1<br />
-v1.17.0.b1<br />
-v1.17.2.b1<br />
-$ git checkout v1.17.2.b1<br />
-[/code]</li>
+<pre><code class="Bash">$ git tag # list available tags
+1.11.0.b1
+1.12.0.b1
+1.13.0.b1
+1.6.13.b1
+v1.14.0.b1
+v1.15.0.b1
+v1.16.0.b1
+v1.17.0.b1
+v1.17.2.b1
+$ git checkout v1.17.2.b1
+</code></pre></li>
 <li style="text-align:justify;">Follow the instructions in README closely on how to set up the build environment (the <em><a href="https://github.com/pycom/pycom-micropython-sigfox#the-esp32-version" target="_blank" rel="noopener">The ESP32 version</a></em> section) up to the point of building <code>mpy-cross</code></li>
 <li style="text-align:justify;">Actually, build <code>mpy-cross</code> according to instructions</li>
 <li style="text-align:justify;">Enter <code>esp32/frozen</code></li>
 <li style="text-align:justify;">Copy there all the <code>.py</code> files you need to be frozen in firmware</li>
 <li style="text-align:justify;">Go one level up, to <code>esp32</code> directory</li>
 <li style="text-align:justify;">Make a build for your board. In case of my LoPy4, the commands were:<br />
-[code language="Bash"]<br />
-$ make BOARD=LOPY4 clean<br />
-$ make BOARD=LOPY4 TARGET=boot -j9<br />
-$ make BOARD=LOPY4 TARGET=app -j9<br />
-$ make BOARD=LOPY4 flash<br />
-[/code]<br />
+<pre><code class="Bash">$ make BOARD=LOPY4 clean
+$ make BOARD=LOPY4 TARGET=boot -j9
+$ make BOARD=LOPY4 TARGET=app -j9
+$ make BOARD=LOPY4 flash
+</code></pre>
 Note on <code>-j9</code>: it is used to speed up building by parallelizing the compilation of independent objects. The number specifies the maximum number of jobs that can be run in parallel. As a rule of thumb, you can safely use <code>-j5</code> on dual-core machines and <code>-j9</code> on quad-core machines.</li>
 <li style="text-align:justify;">Flash the image according to the README.</li>
 </ol>
 <p style="text-align:justify;">Now you don't need your frozen modules' files on the flash because they're included in the firmware. Other than that you work with frozen modules the same way as with regular ones, i.e. you still import them using <code>import</code> statement, etc.</p>
 <p style="text-align:justify;">And here's how a module performs after freezing:</p>
-<p>[code language="Python"]</p>
-<p>&gt;&gt;&gt; chrono = Timer.Chrono()<br />
-&gt;&gt;&gt; mem_free = gc.mem_free()<br />
-&gt;&gt;&gt; chrono.start() # start a timer<br />
-&gt;&gt;&gt; import font24<br />
-&gt;&gt;&gt; chrono.stop() # stop a timer after a module has loaded<br />
-&gt;&gt;&gt; print(mem_free - gc.mem_free())<br />
-560<br />
-&gt;&gt;&gt; print(chrono.read()*1000)<br />
-16.80003</p>
-<p>[/code]</p>
+<p><pre><code class="Python">&gt;&gt;&gt; chrono = Timer.Chrono()
+&gt;&gt;&gt; mem_free = gc.mem_free()
+&gt;&gt;&gt; chrono.start() # start a timer
+&gt;&gt;&gt; import font24
+&gt;&gt;&gt; chrono.stop() # stop a timer after a module has loaded
+&gt;&gt;&gt; print(mem_free - gc.mem_free())
+560
+&gt;&gt;&gt; print(chrono.read()*1000)
+16.80003
+</code></pre></p>
 <p style="text-align:justify;">Here, the garbage collector is irrelevant because frozen modules are apparently already loaded into RAM together with the whole firmware, but as you can see, the improvement in import time is huge.</p>
 <p style="text-align:justify;">To recap the optimizations, we've tried:</p>
 <ul style="text-align:justify;">

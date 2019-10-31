@@ -100,32 +100,29 @@ excerpt: Accidentally inspired by my colleagues during a casual chat, I develope
 <h3 style="text-align:justify;">Inter-process communication in MacOS X</h3>
 <p style="text-align:justify;">Well, in case of Terminal.app, it runs a system shell so we can easily inject some command into the shell to do a callback for the BuildButton.app. As it comes to the IPC itself, there are several solutions for OS X ranging from a shared file on disk to using Mach ports. I ended up somewhere in between by using the oldie but goodie <strong>Apple Script</strong>. With its funny, naïve syntax and the ability to expose virtually any behaviour to the app's scripting interface I believed it was the right tool for the job here.</p>
 <p style="text-align:justify;">For opening up the Terminal and running a command, I came up with the following helper script:</p>
-<p>[code]<br />
-on runInTerminal(command)<br />
-    tell application &quot;Terminal&quot;<br />
-      activate<br />
-      set newTab to do script(command)<br />
-    end tell<br />
-    return newTab<br />
-end runInTerminal<br />
-[/code]</p>
+<p><pre><code class="AppleScript">on runInTerminal(command)
+    tell application &quot;Terminal&quot;
+      activate
+      set newTab to do script(command)
+    end tell
+    return newTab
+end runInTerminal
+</code></pre></p>
 <p style="text-align:justify;">And the command itself had to contain the actual user-defined list of commands, plus a callback to our app:</p>
-<p>[code]<br />
-let argument = { () -&gt; String in<br />
-    let finishCommand = &quot;osascript -e 'tell application \\\&quot;BuildButton\\\&quot; to finish'&quot;<br />
-    if commandToRun.isEmpty {<br />
-        return finishCommand<br />
-    }<br />
-    // commandToRun is the user-defined command<br />
-    return &quot;\(commandToRun); \(finishCommand)&quot;<br />
-}()<br />
-[/code]</p>
+<p><pre><code class="Swift">let argument = { () -&gt; String in
+    let finishCommand = &quot;osascript -e 'tell application \\\&quot;BuildButton\\\&quot; to finish'&quot;
+    if commandToRun.isEmpty {
+        return finishCommand
+    }
+    // commandToRun is the user-defined command
+    return &quot;\(commandToRun); \(finishCommand)&quot;
+}()
+</code></pre></p>
 <p style="text-align:justify;">What does it mean to <em>tell application "BuildButton" to finish</em>? Have a look at the definition:</p>
-<p>[code language="xml"]<br />
-&lt;command name=&quot;finish&quot; code=&quot;bbfinish&quot; description=&quot;Finish current task.&quot;&gt;<br />
-    &lt;cocoa class=&quot;BuildButton.FinishCommand&quot;&gt;<br />
-&lt;/command&gt;<br />
-[/code]</p>
+<p><pre><code class="xml">&lt;command name=&quot;finish&quot; code=&quot;bbfinish&quot; description=&quot;Finish current task.&quot;&gt;
+    &lt;cocoa class=&quot;BuildButton.FinishCommand&quot;&gt;
+&lt;/command&gt;
+</code></pre></p>
 <p style="text-align:justify;">It tells the app to use <code>FinishCommand</code>, which is a subclass of <code>NSScriptCommand</code> and does the actual job of updating the <em>idle</em> characteristic of the button.</p>
 <h1 style="text-align:justify;">The dedicated button circuit</h1>
 <p style="text-align:justify;"><img class="alignright size-medium wp-image-471" src="{{ site.baseurl }}/assets/dome.gif?w=338" alt="dome"/>Since the dev board prototype turned out working fine, I could finally order THE BUTTON, and design a PCB for the circuit. I also decided to give it a last shot with soldering the bare ESP-32 chip to the adapter and I finally got it right :D</p>
@@ -146,9 +143,8 @@ let argument = { () -&gt; String in<br />
 <p style="text-align:justify;">I did some initial bare board testing with the circuit similar to this:</p>
 <p style="text-align:justify;"><img class=" size-large wp-image-467 aligncenter" src="{{ site.baseurl }}/assets/protoboard.jpg?w=2048" alt="protoboard"/></p>
 <p style="text-align:justify;">And I couldn't get it to work because the chip was constantly restarting right after booting up. The console output showed the following message:</p>
-<p>[code]<br />
-Brownout detector was triggered<br />
-[/code]</p>
+<p><pre><code class="plaintext">Brownout detector was triggered
+</code></pre></p>
 <p style="text-align:justify;">It means that the power supply can't deliver high enough voltage to drive the microcontroller. In my case, I was powering it from my computer's USB port via the USB-UART adapter, which should deliver a solid 3.3V for up to at least around 500mA. I also tried the same with a 3.7V Li-ion battery and the standalone regulated DC adapter with no luck. Then I decided to have a look at the program I was running on the ESP.</p>
 <p style="text-align:justify;">When I tried it with a simple hello world example, everything worked fine. But every time I initialized Bluetooth, the brownout detector fired and restarted the device. This must have been caused by a high current peak occurring when powering up Bluetooth. And that's what the bulk capacitor sitting between power supply lines is supposed to handle – cover the current peaks with its charge. In my case, however, it didn't work with a capacitor placed on the breadboard. When I later dug into the topic I learned that this capacitor:</p>
 <ul style="text-align:justify;">

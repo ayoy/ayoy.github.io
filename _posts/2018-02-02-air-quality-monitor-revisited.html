@@ -70,12 +70,12 @@ excerpt: It's been a while since I deployed the WiPy-powered air quality monitor
 <h2 style="text-align:justify;">Confession</h2>
 <p style="text-align:justify;">Ok, fair enough, but why the script didn't fail at battery voltage measurement function since <code>ADC.ATTN_3DB</code> changed to <code>ADC.ATTN_2_5DB</code>?</p>
 <p style="text-align:justify;">Because I used the raw value of <code>1</code>, instead of specifying the constant:</p>
-<p>[code language="Python"]<br />
-# good<br />
-apin = adc.channel(attn=ADC.ATTN_2_5DB, pin='P16')</p>
-<p># baaaad!<br />
-apin = adc.channel(attn=1, pin='P16')<br />
-[/code]</p>
+<p><pre><code class="Python"># good
+apin = adc.channel(attn=ADC.ATTN_2_5DB, pin='P16')
+
+# baaaad!
+apin = adc.channel(attn=1, pin='P16')
+</code></pre></p>
 <p style="text-align:justify;">In previous firmware the <code>1</code> used to mean 3dB, and now it became 2.5dB. It wasn't my code after all, as I copied the code from elsewhere, but still, I didn't bother to carefully read it through and try to understand what's going on there and this is purely my fault. This is the great example of how <strong>not paying enough attention to your code can sometimes cost you real money</strong>.</p>
 <hr />
 <p style="text-align:justify;">All things considered, if the 2400mAh battery died after 16 days, given the discharging curve similar to that of 700mAh battery, we can safely assume that it would still be in a good condition after 14 days, which is the number I was hoping to achieve when planning the battery consumption for the system. Recharging the device twice a month is still not optimal, but quite acceptable for a home sensor.</p>

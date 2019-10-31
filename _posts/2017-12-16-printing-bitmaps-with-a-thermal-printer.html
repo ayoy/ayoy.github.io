@@ -33,13 +33,12 @@ author: Dominik Kapusta
 permalink: "/2017/12/16/printing-bitmaps-with-a-thermal-printer/"
 ---
 <p style="text-align:justify;">I recently wrote about a <a href="http://kapusta.cc/2017/12/11/thermal-printer-library-for-micropython/" target="_blank" rel="noopener">MicroPython library for Adafruit thermal printer</a>. I was able to test it with the LoPy version 1 board from <a href="http://pycom.io" target="_blank" rel="noopener">Pycom</a>, which is a bit resource-constrained. While 512kB of RAM looks fine on paper, you get roughly 10 times less right after booting up:</p>
-<p>[code]</p>
-<p>MicroPython v1.8.6-849-g0af003a4 on 2017-11-24; LoPy with ESP32<br />
-Type &quot;help()&quot; for more information.<br />
-&gt;&gt;&gt; import gc<br />
-&gt;&gt;&gt; gc.mem_free()<br />
-57296</p>
-<p>[/code]</p>
+<p><pre><code class="plain">MicroPython v1.8.6-849-g0af003a4 on 2017-11-24; LoPy with ESP32
+Type &quot;help()&quot; for more information.
+&gt;&gt;&gt; import gc
+&gt;&gt;&gt; gc.mem_free()
+57296
+</code></pre></p>
 <p style="text-align:justify;">And this is <strong>with an empty</strong> <strong><code>main.py</code></strong> <strong>file</strong>. The printer library itself is quite heavy and once you initialize the printer and set up WiFi connection, you'll have around 36kB available. This makes printing bitmaps (including QR codes) a bit problematic, especially the way it had been originally implemented in the Adafruit library, i.e. by loading the whole bitmap into memory and sending it to the printer. I skipped this feature for the initial version of MicroPython lib and left it for later.</p>
 <p style="text-align:justify;">Now that I have fixed issues around regular text printing, the time has come to do something about bitmaps. I'll still wait some time for <a href="https://pycom.io/product/lopy4/" target="_blank" rel="noopener">LoPy4</a> boards, plus it surely is an interesting challenge to try getting it to work on LoPy v1.</p>
 <h1 style="text-align:justify;">The bitmap format</h1>
@@ -55,22 +54,20 @@ Type &quot;help()&quot; for more information.<br />
 <p style="text-align:justify;">When I dug deeper into the code I realized that my <code>printBitmap()</code> function had been a bit buggy. Once I fixed it I was able to print the smaller bitmap straight away! But it was still failing to allocate memory when trying to load the big QR code bitmap.</p>
 <h2 style="text-align:justify;">Printing from file</h2>
 <p style="text-align:justify;">I tried streaming a bitmap from a file on disk. I stored the bitmap bytes in a file, and then passed it as an argument to <code>printBitmapFromFile()</code> function like this:</p>
-<p>[code language="python"]</p>
-<p># first two args are width and height in pixels<br />
-printer.printBitmapFromFile(135, 135, '/flash/lib/qrcode')</p>
-<p>[/code]</p>
+<p><pre><code class="python"># first two args are width and height in pixels
+printer.printBitmapFromFile(135, 135, '/flash/lib/qrcode')
+</code></pre></p>
 <p style="text-align:justify;">It would open the file, read it in one-line chunks and send the data to printer. This way only a small part of data would be kept in memory at once, effectively allowing for processing the whole bitmap.</p>
 <p style="text-align:justify;">In fact, this time I didn't get a memory allocation problem, but this is how the bitmap was printed:</p>
 <p>[caption id="attachment_278" align="aligncenter" width="446"]<img class="  wp-image-278 aligncenter" src="{{ site.baseurl }}/assets/img_31691.jpg" alt="IMG_3169.JPG"/> The QR code as seen by thermal printer – 2017, colorized.[/caption]</p>
 <p style="text-align:justify;">Still suspecting some memory issue, I tried reading only part of the file, limiting the number of lines passed as a second argument to <code>printBitmapFromFile()</code>:</p>
-<p>[code language="python"]<br />
-printer.printBitmapFromFile(135, 35, '/flash/lib/qrcode')<br />
-printer.printBitmapFromFile(135, 55, '/flash/lib/qrcode')<br />
-printer.printBitmapFromFile(135, 85, '/flash/lib/qrcode')<br />
-printer.printBitmapFromFile(135, 105, '/flash/lib/qrcode')<br />
-printer.printBitmapFromFile(135, 120, '/flash/lib/qrcode')<br />
-printer.printBitmapFromFile(135, 128, '/flash/lib/qrcode')<br />
-[/code]</p>
+<p><pre><code class="python">printer.printBitmapFromFile(135, 35, '/flash/lib/qrcode')
+printer.printBitmapFromFile(135, 55, '/flash/lib/qrcode')
+printer.printBitmapFromFile(135, 85, '/flash/lib/qrcode')
+printer.printBitmapFromFile(135, 105, '/flash/lib/qrcode')
+printer.printBitmapFromFile(135, 120, '/flash/lib/qrcode')
+printer.printBitmapFromFile(135, 128, '/flash/lib/qrcode')
+</code></pre></p>
 <p style="text-align:justify;"><img class="  wp-image-279 alignleft" src="{{ site.baseurl }}/assets/img_3171.jpg" alt="IMG_3171"/></p>
 <p style="text-align:justify;">Apparently, the printer was able to handle smaller bitmaps but failed once the total size exceeded ~120 lines, 17 bytes each – which is 2040 bytes, and it may be meaningful or just a coincidence. I yet have to figure out whether 2kB is the real maximum limit of bitmap chunk size that the printer accepts.</p>
 <p style="text-align:justify;">The <code>printBitmap()</code> (and my file-based variation of it) has the optional <code>LaaT</code> argument - it stands for <em>line-at-a-time</em> and means sending a separate print command for every single line of the bitmap, instead of one command for the whole image. Enabling this flag fixed the printout for me, however using it slows the printing down, so it's not an optimal solution.</p>
