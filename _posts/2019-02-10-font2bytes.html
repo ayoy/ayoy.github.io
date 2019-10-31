@@ -72,7 +72,7 @@ excerpt: It's a long overdue post, but my real life kicked in heavily last summe
 </ul>
 <p>&nbsp;</p>
 <hr />
-<p style="text-align:justify;">Following up on my <a href="http://kapusta.cc/2018/03/31/epd/">e-paper display library</a>, I found out fairly quickly that the original fonts provided by Waveshare have some shortcomings. First of all, you might want a different size than 8, 12, 16, 20 or 24px high. I can also imagine situations where you'd need a bold or italic font typeface alongside the regular one. Then, the default font contains basic ASCII characters only, which is fine for English but falls short for virtually any other language. Any of the following:</p>
+<p style="text-align:justify;">Following up on my <a href="{{ site.baseurl }}/2018/03/31/epd/">e-paper display library</a>, I found out fairly quickly that the original fonts provided by Waveshare have some shortcomings. First of all, you might want a different size than 8, 12, 16, 20 or 24px high. I can also imagine situations where you'd need a bold or italic font typeface alongside the regular one. Then, the default font contains basic ASCII characters only, which is fine for English but falls short for virtually any other language. Any of the following:</p>
 <ul style="text-align:justify;">
 <li>the extended ASCII set (code range 128-255),</li>
 <li>non-ASCII Latin alphabet characters (<code>ąčćęěłňńšśźżž</code>, to name a few :) ),</li>
@@ -97,7 +97,7 @@ excerpt: It's a long overdue post, but my real life kicked in heavily last summe
 <p style="text-align:justify;">There are some changes/improvements compared to the original MacOS X version:</p>
 <ul>
 <li style="text-align:justify;">Font width and height is adjustable freely (that is, between 1 and 255px) and independently of each other.</li>
-<li style="text-align:justify;">Python List and Python Bytes output formats are added. The latter produces a Python <code>bytes</code> object, which is the optimal way to store font data (and can additionally benefit from freezing it in the firmware, as described in <a href="http://kapusta.cc/2018/03/31/epd/">one of my previous blog posts</a>). New types of converters can still be easily added if need be.</li>
+<li style="text-align:justify;">Python List and Python Bytes output formats are added. The latter produces a Python <code>bytes</code> object, which is the optimal way to store font data (and can additionally benefit from freezing it in the firmware, as described in <a href="{{ site.baseurl }}/2018/03/31/epd/">one of my previous blog posts</a>). New types of converters can still be easily added if need be.</li>
 <li style="text-align:justify;">Besides the GUI application, a command line tool is there for those that don't need the UI or don't want to use Qt for some reason:</li>
 </ul>
 <p><img class="alignnone size-full wp-image-702" src="{{ site.baseurl }}/assets/screenshot-2019-02-10-at-18.16.39.png" alt="Screenshot 2019-02-10 at 18.16.39.png"/> <em>f2b</em> command line utility</p>
