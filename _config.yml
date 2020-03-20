@@ -31,6 +31,10 @@ github_username:  ayoy
 theme: minima
 plugins:
   - jekyll-feed
+  - jekyll-paginate
+
+show_excerpts: true
+paginate: 5
 
 # Exclude from processing.
 # The following items will not be processed, by default.

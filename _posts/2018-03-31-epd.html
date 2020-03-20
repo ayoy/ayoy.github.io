@@ -48,7 +48,8 @@ excerpt: This time porting Python code to MicroPython wasn't only about fixing s
 <p style="text-align:justify;">The Python library for Raspberry Pi uses PIL (Python Imaging Library) for displaying text and images. It's awesome because it greatly simplifies the implementation. PIL is however not available in MicroPython, so I had to resort to drawing text using fonts defined in the code as arrays.</p>
 <h2>Optimizations</h2>
 <p>Here's the example definition of a letter 'A' in a 24-pixel font:</p>
-<p><pre><code class='Bash'># @2376 'A' (17 pixels wide)
+{%- highlight C -%}
+# @2376 'A' (17 pixels wide)
 0x00, 0x00, 0x00, #
 0x00, 0x00, 0x00, #
 0x00, 0x00, 0x00, #
@@ -73,7 +74,7 @@ excerpt: This time porting Python code to MicroPython wasn't only about fixing s
 0x00, 0x00, 0x00, #
 0x00, 0x00, 0x00, #
 0x00, 0x00, 0x00, #
-</code></pre></p>
+  {%- endhighlight -%}
 <p style="text-align:justify;">Full font definition is available <a href="https://github.com/ayoy/micropython-waveshare-epd/blob/11c31c601ef144228fbfd969bb65a300a3aa3030/fonts/font24.py" target="_blank" rel="noopener">here</a>. 3x24 = 72 bytes are required for a single character. Now multiply it by the number of printable ASCII characters (95, in the 32-127 range) and you'll get 6840 items in the list. Even for the small 8-pixel font the list has 760 elements.</p>
 <p style="text-align:justify;">Similarly for images, to display an image you'll need a full-screen bitmap, which in case of my small 200x200px display is a list with 200x200/8 = 5000 bytes.</p>
 <p style="text-align:justify;">This brings up performance problems on all possible fronts: loading a font module is terribly slow and it generates huge memory overhead. Have a look:</p>
