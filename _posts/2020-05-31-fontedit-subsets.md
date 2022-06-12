@@ -88,7 +88,7 @@ character by character, starting from `' '` (ASCII 32) and ending with `'~'` (AS
 It's designed to easily match individual font characters with their respective ASCII codes
 -- retrieving specific character data can be expressed with the following pseudocode:
 
-```C
+```c
 // font - the font data array
 // bytes_per_character - the number of bytes that holds a single character
 
@@ -107,7 +107,7 @@ To preserve the ASCII code to font array index relationship, a helper look-up ta
 is defined alongside the font array. The look-up table values are font array offsets for 
 respective characters, relative to these characters' ASCII codes. Sounds complicated, but here's an example:
 
-```C
+```c
 // Using 8x8px font to make the example simpler
 const unsigned char font[] = {
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, // Dummy blank character
