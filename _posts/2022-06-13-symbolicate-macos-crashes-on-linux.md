@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Symbolicate iOS and macOS app crashes on Linux
+title: Symbolicate iOS and macOS app crash reports on Linux
 type: post
 comments: true
 categories:
@@ -14,7 +14,9 @@ tags:
 - lldb
 - atos
 author: Dominik Kapusta
-permalink: "/2022/06/13/symbolicate-macos-crashes-on-linux"
+permalink: "/2022/06/13/symbolicate-macos-crash-reports-on-linux"
+redirect_from:
+  - /2022/06/13/symbolicate-macos-crashes-on-linux
 excerpt: If you use a custom (in-house?) crashlog collection service and
   want to symbolicate crashlogs server-side, you don't need a macOS machine.
 ---
