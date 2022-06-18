@@ -5,6 +5,11 @@
 
 $spacing-unit:     30px !default;
 
+.inner {
+  width: 800px;
+  margin: 0 auto;
+}
+
 header {
   padding-top: 12px;
   padding-bottom: 0px;
@@ -28,7 +33,41 @@ ul li {
   float: left;
 }
 
+.social-media-list {
+  padding-left: 10px;
+  padding-right: 10px;
+
+  a {
+    color: #303030;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
+
+.svg-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  fill: currentColor;
+  padding: 5px 3px 2px 5px;
+  vertical-align: text-bottom;
+}
+
+.page-link {
+  a {
+    color: #303030;
+  }
+  float: right;
+}
+
 header {
+  a {
+    color: unset;
+    &:hover {
+      color: unset !important;
+    }
+  }
+
   .wrapper {
     line-height: 36px;
     align: baseline;
@@ -45,11 +84,8 @@ hr {
   margin-top: 10px;
 }
 
-.page-link {
-  float: right;
-}
-
 .post-list {
+  padding-left: 0;
   margin-left: 0;
 
   > li {
