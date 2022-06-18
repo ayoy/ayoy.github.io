@@ -1,0 +1,59 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+$spacing-unit:     30px !default;
+
+header {
+  padding-top: 12px;
+  padding-bottom: 0px;
+}
+
+ul {
+  padding-left: 20px;
+}
+
+ol {
+  padding-left: 20px;
+}
+
+ul li {
+  padding-left: 0;
+}
+
+.site-title {
+  font-size: 24px;
+  color: #6d6d6d;
+  float: left;
+}
+
+header {
+  .wrapper {
+    line-height: 36px;
+    align: baseline;
+  }
+
+  .wrapper:after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+}
+
+hr {
+  margin-top: 10px;
+}
+
+.page-link {
+  float: right;
+}
+
+.post-list {
+  margin-left: 0;
+
+  > li {
+    margin-bottom: $spacing-unit;
+    list-style: none;
+  }
+}

@@ -99,14 +99,14 @@ Apart from the tools, you'll need your crash report and your app's debug symbols
 
 # Symbolication
 
-#### Note: always specify architecture
+## Note: always specify architecture
 
 Please note that you must observe the architecture specified in the crash report (x86_64 vs arm64)
 and pass it over to symbolication-related commands. This is because app (and dSYMs) are fat
 binaries containing sets of binary code supporting specific architectures. The debug symbol addresses
 will differ between architectures.
 
-#### Get the binary image load address
+## Get the binary image load address
 
 Unsymbolicated stack frames are described using binary image load address and offset, for instance:
 
@@ -149,7 +149,7 @@ The above would output:
 __mh_execute_header T 100000000 0
 ```
 
-#### Resolve addresses to symbols
+## Resolve addresses to symbols
 
 Knowing the normalized load address, we can proceed to computing symbol addresses
 and resolving them. A little calculation is required here. Let's go back to our stack trace:
@@ -195,7 +195,7 @@ rendering the actual function name:
 ViewController.updateLabel()
 ```
 
-#### Output
+## Output
 
 After symbolicating all stack frames and gluing the data together, the stack trace
 symbolicated using LLVM on Linux looks like this:
@@ -220,7 +220,7 @@ That's not bad already!
 
 # Additional remarks
 
-#### llvm-symbolizer
+## llvm-symbolizer
 
 This tool is shipped with LLVM alongside `llvm-addr2line` and it does roughly
 the same -- takes similar arguments and produces similar output. I've only found
@@ -230,11 +230,11 @@ symbols, and it also provides the source code column, in addition to the row.
 And historically, `llvm-addr2line` was designed as a drop-in replacement to
 GNU `addr2line`. Perhaps it's just a matter of preference to pick either of the two.
 
-#### Batch operations
+## Batch operations
 
 Both `llvm-addr2line` and `llvm-symbolizer` can take multiple symbols for processing.
 
-#### Sample Dockerfile
+## Sample Dockerfile
 
 This Dockerfile contains all the software required to symbolicate Apple
 crash reports on Linux:
