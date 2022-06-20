@@ -23,7 +23,7 @@ excerpt: If you use a custom (in-house?) crashlog collection service and
 
 If you need to symbolicate crash reports for your macOS or iOS app yourself,
 you'd probably use `atos` command line utility to get the job done. Apple has
-an in-depth [documentation](https://developer.apple.com/documentation/xcode/adding-identifiable-symbol-names-to-a-crash-report)
+in-depth [documentation](https://developer.apple.com/documentation/xcode/adding-identifiable-symbol-names-to-a-crash-report)
 on crash reports symbolication, and they recommend `atos` in the section called
 [Symbolicate the Crash Report with the Command Line](https://developer.apple.com/documentation/xcode/adding-identifiable-symbol-names-to-a-crash-report#Symbolicate-the-Crash-Report-with-the-Command-Line).
 
