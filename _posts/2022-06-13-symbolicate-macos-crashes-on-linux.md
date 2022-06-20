@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Symbolicate iOS and macOS app crash reports on Linux
+title: Symbolicate macOS (and iOS) apps crash reports on Linux
 type: post
 comments: true
 categories:
@@ -21,7 +21,7 @@ excerpt: If you use a custom (in-house?) crashlog collection service and
   want to symbolicate crashlogs server-side, you don't need a macOS machine.
 ---
 
-If you need to symbolicate crash reports for your iOS or macOS app yourself,
+If you need to symbolicate crash reports for your macOS or iOS app yourself,
 you'd probably use `atos` command line utility to get the job done. Apple has
 an in-depth [documentation](https://developer.apple.com/documentation/xcode/adding-identifiable-symbol-names-to-a-crash-report)
 on crash reports symbolication, and they recommend `atos` in the section called
